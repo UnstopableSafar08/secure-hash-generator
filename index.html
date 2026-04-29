@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Tools</title>
+    <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/styles.css">
 </head>
+
 <body>
     <div class="container">
         <h1>🔐 Secure Tools</h1>
@@ -17,6 +22,7 @@
             <button class="tab-btn active" data-tab="hash">Hash Generator</button>
             <button class="tab-btn" data-tab="password">Password Generator</button>
             <button class="tab-btn" data-tab="random">Random String Generator</button>
+            <button class="tab-btn" data-tab="bcrypt">Bcrypt Generator</button>
         </div>
 
         <div class="tab-content active" id="hashTab">
@@ -45,7 +51,9 @@
             </div>
 
             <div class="info">
-                <p><strong>Security Note:</strong> All hashing is performed locally in your browser. No data is sent to any server. SHA-256, SHA-384, and SHA-512 are recommended for security purposes. SHA-1 and MD5 are included for compatibility but are considered cryptographically broken.</p>
+                <p><strong>Security Note:</strong> All hashing is performed locally in your browser. No data is sent to
+                    any server. SHA-256, SHA-384, and SHA-512 are recommended for security purposes. SHA-1 and MD5 are
+                    included for compatibility but are considered cryptographically broken.</p>
             </div>
         </div>
 
@@ -75,9 +83,12 @@
                     <input type="checkbox" id="numbers" checked>
                     <label for="numbers">Numbers (0-9)</label>
                 </div>
-                <div class="option-group">
-                    <input type="checkbox" id="symbols" checked>
-                    <label for="symbols">Symbols (!@#$)</label>
+                <div class="option-group symbols-group">
+                    <div>
+                        <input type="checkbox" id="symbols" checked>
+                        <label for="symbols">Symbols</label>
+                    </div>
+                    <input type="text" class="custom-symbols-input-inline" id="passwordCustomSymbols" placeholder="!@#$%^&*">
                 </div>
             </div>
 
@@ -100,7 +111,9 @@
             </div>
 
             <div class="info">
-                <p><strong>Security Note:</strong> Passwords are generated locally using cryptographically secure random values. No data is sent to any server. Use passwords of at least 12 characters with mixed character types for best security.</p>
+                <p><strong>Security Note:</strong> Passwords are generated locally using cryptographically secure random
+                    values. No data is sent to any server. Use passwords of at least 12 characters with mixed character
+                    types for best security.</p>
             </div>
         </div>
 
@@ -121,7 +134,8 @@
                 <div class="string-count-header">
                     <label>Number of Strings:</label>
                     <div class="string-count-input-wrapper">
-                        <input type="number" class="string-count-input" id="stringCountInput" min="1" max="50" value="5">
+                        <input type="number" class="string-count-input" id="stringCountInput" min="1" max="50"
+                            value="5">
                         <span class="string-count-value" id="stringCountValue">5</span>
                     </div>
                 </div>
@@ -142,9 +156,12 @@
                     <input type="checkbox" id="stringNumbers" checked>
                     <label for="stringNumbers">Numbers (0-9)</label>
                 </div>
-                <div class="option-group">
-                    <input type="checkbox" id="stringSymbols">
-                    <label for="stringSymbols">Symbols (!@#$)</label>
+                <div class="option-group symbols-group">
+                    <div>
+                        <input type="checkbox" id="stringSymbols">
+                        <label for="stringSymbols">Symbols</label>
+                    </div>
+                    <input type="text" class="custom-symbols-input-inline" id="stringCustomSymbols" placeholder="!@#$%^&*">
                 </div>
             </div>
 
@@ -158,7 +175,68 @@
             </div>
 
             <div class="info">
-                <p><strong>Security Note:</strong> Random strings are generated locally using cryptographically secure random values. No data is sent to any server. Useful for API keys, tokens, unique identifiers, and test data.</p>
+                <p><strong>Security Note:</strong> Random strings are generated locally using cryptographically secure
+                    random values. No data is sent to any server. Useful for API keys, tokens, unique identifiers, and
+                    test data.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="bcryptTab">
+            <div class="bcrypt-mode-toggle">
+                <button class="bcrypt-mode-btn active" data-mode="hash">Hash</button>
+                <button class="bcrypt-mode-btn" data-mode="verify">Verify</button>
+            </div>
+
+            <div class="bcrypt-hash-mode" id="bcryptHashMode">
+                <div class="input-group">
+                    <label for="bcryptInput">Enter text to hash:</label>
+                    <textarea id="bcryptInput" placeholder="Type or paste your text here..."></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="bcryptRounds">Cost Factor (Rounds):</label>
+                    <div class="bcrypt-rounds-control">
+                        <input type="range" class="bcrypt-rounds-slider" id="bcryptRoundsSlider" min="1" max="20"
+                            value="10">
+                        <span class="bcrypt-rounds-value" id="bcryptRoundsValue">10</span>
+                    </div>
+                    <div class="bcrypt-rounds-info">
+                        <small>Higher rounds = more secure but slower. 10 is recommended for most use cases.</small>
+                    </div>
+                </div>
+
+                <button class="generate-btn" id="bcryptGenerateBtn">Generate Bcrypt Hash</button>
+
+                <div class="result-container" id="bcryptResultContainer">
+                    <div class="result-label">Bcrypt Hash:</div>
+                    <div class="result-value" id="bcryptResultValue"></div>
+                    <button class="copy-btn" id="bcryptCopyBtn">📋 Copy to Clipboard</button>
+                </div>
+            </div>
+
+            <div class="bcrypt-verify-mode" id="bcryptVerifyMode" style="display: none;">
+                <div class="input-group">
+                    <label for="bcryptVerifyInput">Enter plain text:</label>
+                    <textarea id="bcryptVerifyInput" placeholder="Type or paste the plain text here..."></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="bcryptHashInput">Enter bcrypt hash to verify:</label>
+                    <textarea id="bcryptHashInput" placeholder="Paste the bcrypt hash here..."></textarea>
+                </div>
+
+                <button class="generate-btn" id="bcryptVerifyBtn">Verify Hash</button>
+
+                <div class="result-container" id="bcryptVerifyResultContainer">
+                    <div class="result-label">Verification Result:</div>
+                    <div class="result-value" id="bcryptVerifyResultValue"></div>
+                </div>
+            </div>
+
+            <div class="info">
+                <p><strong>Security Note:</strong> Bcrypt hashing is performed locally in your browser using the
+                    bcryptjs library. No data is sent to any server. Bcrypt is designed to be slow and resistant to
+                    brute-force attacks, making it ideal for password hashing.</p>
             </div>
         </div>
 
@@ -167,6 +245,26 @@
         </footer>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // Load bcryptjs library
+        (function() {
+            var script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js';
+            script.crossOrigin = 'anonymous';
+            script.onload = function() {
+                // Assign dcodeIO.bcrypt to window.bcrypt for easier access
+                if (window.dcodeIO && window.dcodeIO.bcrypt) {
+                    window.bcrypt = window.dcodeIO.bcrypt;
+                }
+                // Trigger initialization
+                if (typeof window.initBcrypt === 'function') {
+                    window.initBcrypt();
+                }
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
+    <script src="assets/js/script.js"></script>
 </body>
+
 </html>
