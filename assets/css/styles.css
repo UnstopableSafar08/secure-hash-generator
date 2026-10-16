@@ -194,6 +194,7 @@ body::before {
     align-items: center;
     gap: 12px;
     width: 100%;
+    min-width: 0;
     padding: 11px 12px;
     border: 1px solid transparent;
     border-radius: 12px;
@@ -1842,6 +1843,10 @@ textarea::placeholder {
 }
 
 @media (max-width: 640px) {
+    body {
+        padding: 12px;
+    }
+
     .main {
         padding: 24px 16px;
         border-radius: 16px;
@@ -1885,6 +1890,10 @@ textarea::placeholder {
 
     .base64-actions-inline {
         width: 100%;
+    }
+
+    .dropzone {
+        padding: 26px 14px;
     }
 
     .base64-actions-inline button {
