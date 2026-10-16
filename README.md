@@ -38,6 +38,22 @@ A modern, secure web application for generating hashes, passwords, random string
 - Uses bcryptjs library for client-side bcrypt operations
 - Ideal for password hashing and verification
 
+### ↔️ Base64 Tool
+- Realtime Base64 encode/decode (UTF-8 safe, incl. emoji)
+- Standard and URL-safe alphabets
+- Swap, clear, copy, and live char counts
+
+### 🔢 Char Count
+- Realtime counts: characters (with/without whitespace), words, lines, sentences, paragraphs
+- Composition breakdown: uppercase, lowercase, other letters, digits, spaces, other whitespace, symbols
+- Per-character frequency table, reading time, and UTF-8 byte size
+- Copyable summary
+
+### 🖼️ Image Base64
+- Encode: drag & drop (or browse) any image to a Base64 data URL, with preview, file info, and dimensions
+- Raw Base64 or full data URL output, copy to clipboard, download as `.txt`
+- Decode: paste Base64/data URL for realtime preview with magic-byte format detection (PNG, JPEG, GIF, WebP, BMP, SVG) and one-click image download
+
 ## Security
 
 - All operations performed locally in your browser
@@ -52,6 +68,7 @@ A modern, secure web application for generating hashes, passwords, random string
 - **HTML5** - Structure
 - **CSS3** - Modern styling with glassmorphism effects
 - **Vanilla JavaScript** - No frameworks, pure JS
+- **Lucide Icons** - Icon set vendored locally at `assets/js/lucide.min.js` (no CDN dependency)
 - **Web Crypto API** - Secure cryptographic operations
 - **bcryptjs** - Bcrypt hashing library (loaded via CDN)
 
@@ -71,15 +88,28 @@ No build process or dependencies required!
 
 ```
 secure-hash-generator/
-├── index.html              # Main HTML file
+├── index.html              # App shell: sidebar nav + tool panels
+├── manifest.webmanifest    # PWA manifest (installable, offline)
+├── sw.js                   # Service worker (offline app-shell cache)
 ├── assets/
 │   ├── css/
 │   │   └── styles.css      # All styling
-│   └── js/
-│       └── script.js       # All JavaScript functionality
+│   ├── js/
+│   │   ├── script.js       # All tool logic + hash router
+│   │   └── lucide.min.js   # Lucide icons, vendored (no CDN)
+│   └── img/
+│       ├── icon.svg        # App/PWA icon
+│       └── favicon.ico     # Browser favicon
 ├── README.md               # This file
 └── .gitignore              # Git ignore rules
 ```
+
+## Navigation
+
+The sidebar lists all tools. Every tool is deep-linkable via hash routes
+(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`),
+so bookmarks and back/forward buttons work. The sidebar search filters the
+tool list, and the layout collapses to a top nav on small screens.
 
 ## Browser Support
 

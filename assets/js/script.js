@@ -5,25 +5,79 @@ const resultLabel = document.getElementById('resultLabel');
 const resultValue = document.getElementById('resultValue');
 const copyBtn = document.getElementById('copyBtn');
 const algorithmBtns = document.querySelectorAll('.algorithm-btn');
-const tabBtns = document.querySelectorAll('.tab-btn');
-const tabContents = document.querySelectorAll('.tab-content');
+const navBtns = document.querySelectorAll('.nav-btn');
+const toolPanels = document.querySelectorAll('.tab-content');
+const toolTitle = document.getElementById('toolTitle');
+const toolDesc = document.getElementById('toolDesc');
+const toolSearch = document.getElementById('toolSearch');
 
 let selectedAlgorithm = 'SHA-256';
 
-// Tab switching
-tabBtns.forEach(btn => {
+// Lucide icons helper (graceful no-op if CDN fails)
+function refreshIcons() {
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
+}
+
+function setBtn(btn, icon, label) {
+    btn.innerHTML = '<i data-lucide="' + icon + '"></i> ' + label;
+    refreshIcons();
+}
+
+// Hash-routed sidebar navigation (deep-linkable: #/hash, #/base64, ...)
+const TOOLS = {
+    hash: { title: 'Hash Generator', desc: 'Generate SHA-256, SHA-384, SHA-512, SHA-1 and MD5 digests instantly.' },
+    password: { title: 'Password Generator', desc: 'Create strong, cryptographically secure passwords with custom rules.' },
+    random: { title: 'Random Strings', desc: 'Generate batches of random strings for API keys, tokens and IDs.' },
+    bcrypt: { title: 'Bcrypt', desc: 'Hash passwords with bcrypt and verify hashes against plain text.' },
+    base64: { title: 'Base64 Tool', desc: 'Encode and decode Base64 in realtime, including URL-safe output.' },
+    charCount: { title: 'Char Count', desc: 'Count characters, words, lines and inspect character frequency.' },
+    image: { title: 'Image Base64', desc: 'Convert images to Base64 data URLs and decode Base64 back into images.' }
+};
+
+function currentToolFromHash() {
+    const id = (window.location.hash || '').replace(/^#\/?/, '');
+    return Object.prototype.hasOwnProperty.call(TOOLS, id) ? id : 'hash';
+}
+
+function renderRoute() {
+    const id = currentToolFromHash();
+    navBtns.forEach(b => {
+        const active = b.dataset.tool === id;
+        b.classList.toggle('active', active);
+        if (active) b.setAttribute('aria-current', 'page');
+        else b.removeAttribute('aria-current');
+    });
+    toolPanels.forEach(panel => {
+        panel.classList.toggle('active', panel.id === id + 'Tab');
+    });
+    if (toolTitle) toolTitle.textContent = TOOLS[id].title;
+    if (toolDesc) toolDesc.textContent = TOOLS[id].desc;
+    document.title = TOOLS[id].title + ' · Secure Tools';
+}
+
+navBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-        tabBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const tabId = btn.dataset.tab;
-        tabContents.forEach(content => {
-            content.classList.remove('active');
-            if (content.id === tabId + 'Tab') {
-                content.classList.add('active');
-            }
-        });
+        const target = '#/' + btn.dataset.tool;
+        if (window.location.hash === target) renderRoute();
+        else window.location.hash = target;
     });
 });
+
+window.addEventListener('hashchange', renderRoute);
+
+if (toolSearch) {
+    toolSearch.addEventListener('input', () => {
+        const q = toolSearch.value.trim().toLowerCase();
+        navBtns.forEach(b => {
+            const hit = (b.dataset.tool + ' ' + b.textContent).toLowerCase().includes(q);
+            b.style.display = hit ? '' : 'none';
+        });
+    });
+}
+
+renderRoute();
 
 // Hash Generator
 algorithmBtns.forEach(btn => {
@@ -61,7 +115,7 @@ async function generateHash() {
         resultLabel.textContent = `${selectedAlgorithm} Hash:`;
         resultValue.textContent = hashHex;
         resultContainer.classList.add('visible');
-        copyBtn.textContent = '📋 Copy to Clipboard';
+        setBtn(copyBtn, 'copy', 'Copy to Clipboard');
         copyBtn.classList.remove('copied');
     } catch (error) {
         console.error('Error generating hash:', error);
@@ -275,10 +329,10 @@ inputText.addEventListener('keydown', (e) => {
 copyBtn.addEventListener('click', async () => {
     try {
         await navigator.clipboard.writeText(resultValue.textContent);
-        copyBtn.textContent = '✓ Copied!';
+        setBtn(copyBtn, 'check', 'Copied!');
         copyBtn.classList.add('copied');
         setTimeout(() => {
-            copyBtn.textContent = '📋 Copy to Clipboard';
+            setBtn(copyBtn, 'copy', 'Copy to Clipboard');
             copyBtn.classList.remove('copied');
         }, 2000);
     } catch (error) {
@@ -437,10 +491,10 @@ copyPasswordBtn.addEventListener('click', async () => {
     if (password && password !== 'Click generate to create password' && password !== 'Select at least one character type') {
         try {
             await navigator.clipboard.writeText(password);
-            copyPasswordBtn.textContent = '✓ Copied!';
+            setBtn(copyPasswordBtn, 'check', 'Copied!');
             copyPasswordBtn.classList.add('copied');
             setTimeout(() => {
-                copyPasswordBtn.textContent = '📋 Copy';
+                setBtn(copyPasswordBtn, 'copy', 'Copy');
                 copyPasswordBtn.classList.remove('copied');
             }, 2000);
         } catch (error) {
@@ -629,10 +683,11 @@ function generateRandomStrings() {
         stringItem.className = 'string-item';
         stringItem.innerHTML = `
             <span class="string-item-text">${randomString}</span>
-            <button class="string-item-copy" data-string="${randomString}">📋 Copy</button>
+            <button class="string-item-copy" data-string="${randomString}"><i data-lucide="copy"></i> Copy</button>
         `;
         stringsOutput.appendChild(stringItem);
     }
+    refreshIcons();
 
     // Add copy functionality to individual strings
     document.querySelectorAll('.string-item-copy').forEach(btn => {
@@ -640,10 +695,10 @@ function generateRandomStrings() {
             const stringToCopy = btn.dataset.string;
             try {
                 await navigator.clipboard.writeText(stringToCopy);
-                btn.textContent = '✓ Copied!';
+                setBtn(btn, 'check', 'Copied!');
                 btn.classList.add('copied');
                 setTimeout(() => {
-                    btn.textContent = '📋 Copy';
+                    setBtn(btn, 'copy', 'Copy');
                     btn.classList.remove('copied');
                 }, 2000);
             } catch (error) {
@@ -665,16 +720,589 @@ copyAllStringsBtn.addEventListener('click', async () => {
 
     try {
         await navigator.clipboard.writeText(allStrings);
-        copyAllStringsBtn.textContent = '✓ All Copied!';
+        setBtn(copyAllStringsBtn, 'check', 'All Copied!');
         copyAllStringsBtn.classList.add('copied');
         setTimeout(() => {
-            copyAllStringsBtn.textContent = '📋 Copy All';
+            setBtn(copyAllStringsBtn, 'copy', 'Copy All');
             copyAllStringsBtn.classList.remove('copied');
         }, 2000);
     } catch (error) {
         console.error('Failed to copy:', error);
     }
 });
+
+// Base64 Tool (realtime encode/decode, UTF-8 safe)
+(function initBase64() {
+    const base64Input = document.getElementById('base64Input');
+    const base64InputLabel = document.getElementById('base64InputLabel');
+    const base64OutputValue = document.getElementById('base64OutputValue');
+    const base64ResultLabel = document.getElementById('base64ResultLabel');
+    const base64Error = document.getElementById('base64Error');
+    const base64CopyBtn = document.getElementById('base64CopyBtn');
+    const base64ClearBtn = document.getElementById('base64ClearBtn');
+    const base64SwapBtn = document.getElementById('base64SwapBtn');
+    const base64UrlSafe = document.getElementById('base64UrlSafe');
+    const base64InputCount = document.getElementById('base64InputCount');
+    const base64OutputCount = document.getElementById('base64OutputCount');
+    const base64ModeBtns = document.querySelectorAll('.base64-mode-btn');
+
+    if (!base64Input || !base64OutputValue) return;
+
+    let base64Mode = 'encode';
+
+    function encodeUnicode(str, urlSafe) {
+        const bytes = new TextEncoder().encode(str);
+        let binary = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        }
+        let out = btoa(binary);
+        if (urlSafe) {
+            out = out.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+        return out;
+    }
+
+    function decodeUnicode(input, urlSafeInput) {
+        let s = input.trim().replace(/\s+/g, '');
+        if (urlSafeInput || /[-_]/.test(s)) {
+            s = s.replace(/-/g, '+').replace(/_/g, '/');
+        }
+        const pad = s.length % 4;
+        if (pad === 1) {
+            throw new Error('Invalid Base64: incorrect length.');
+        }
+        if (pad > 0) {
+            s += '='.repeat(4 - pad);
+        }
+        if (s !== '' && !/^[A-Za-z0-9+/]*={0,2}$/.test(s)) {
+            throw new Error('Invalid Base64: contains illegal characters.');
+        }
+        const binary = atob(s);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    }
+
+    function updateBase64() {
+        const text = base64Input.value;
+        base64InputCount.textContent = `Input: ${text.length} chars`;
+        if (base64CopyBtn.classList.contains('copied')) {
+            setBtn(base64CopyBtn, 'copy', 'Copy to Clipboard');
+            base64CopyBtn.classList.remove('copied');
+        }
+
+        if (!text) {
+            base64OutputValue.textContent = '';
+            base64Error.textContent = '';
+            base64OutputCount.textContent = 'Output: 0 chars';
+            return;
+        }
+
+        try {
+            let result;
+            if (base64Mode === 'encode') {
+                result = encodeUnicode(text, base64UrlSafe.checked);
+            } else {
+                result = decodeUnicode(text, base64UrlSafe.checked);
+            }
+            base64OutputValue.textContent = result;
+            base64OutputCount.textContent = `Output: ${result.length} chars`;
+            base64Error.textContent = '';
+        } catch (err) {
+            base64OutputValue.textContent = '';
+            base64OutputCount.textContent = 'Output: 0 chars';
+            base64Error.textContent = err.message || 'Invalid Base64 input.';
+        }
+    }
+
+    function updateBase64Labels() {
+        if (base64Mode === 'encode') {
+            base64InputLabel.textContent = 'Enter text to encode:';
+            base64Input.placeholder = 'Type or paste your text here...';
+            base64ResultLabel.textContent = 'Base64 Output:';
+        } else {
+            base64InputLabel.textContent = 'Enter Base64 to decode:';
+            base64Input.placeholder = 'Paste Base64 string here...';
+            base64ResultLabel.textContent = 'Decoded Output:';
+        }
+    }
+
+    base64ModeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            base64ModeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            base64Mode = btn.dataset.mode;
+            updateBase64Labels();
+            updateBase64();
+        });
+    });
+
+    base64Input.addEventListener('input', updateBase64);
+    base64UrlSafe.addEventListener('change', updateBase64);
+
+    base64SwapBtn.addEventListener('click', () => {
+        if (base64Error.textContent || !base64OutputValue.textContent) return;
+        base64Input.value = base64OutputValue.textContent;
+        base64Mode = base64Mode === 'encode' ? 'decode' : 'encode';
+        base64ModeBtns.forEach(b => {
+            b.classList.toggle('active', b.dataset.mode === base64Mode);
+        });
+        updateBase64Labels();
+        updateBase64();
+        base64Input.focus();
+    });
+
+    base64ClearBtn.addEventListener('click', () => {
+        base64Input.value = '';
+        updateBase64();
+        base64Input.focus();
+    });
+
+    base64CopyBtn.addEventListener('click', async () => {
+        const output = base64OutputValue.textContent;
+        if (!output) return;
+        try {
+            await navigator.clipboard.writeText(output);
+            setBtn(base64CopyBtn, 'check', 'Copied!');
+            base64CopyBtn.classList.add('copied');
+            setTimeout(() => {
+                setBtn(base64CopyBtn, 'copy', 'Copy to Clipboard');
+                base64CopyBtn.classList.remove('copied');
+            }, 2000);
+        } catch (error) {
+            console.error('Failed to copy:', error);
+        }
+    });
+
+    updateBase64Labels();
+    updateBase64();
+})();
+
+// Char Count Tool (realtime statistics, Unicode-aware)
+(function initCharCount() {
+    const charInput = document.getElementById('charCountInput');
+    if (!charInput) return;
+
+    const statChars = document.getElementById('statChars');
+    const statNoSpaces = document.getElementById('statNoSpaces');
+    const statWords = document.getElementById('statWords');
+    const statLines = document.getElementById('statLines');
+    const statSentences = document.getElementById('statSentences');
+    const statParagraphs = document.getElementById('statParagraphs');
+    const charComposition = document.getElementById('charComposition');
+    const charFreqOutput = document.getElementById('charFreqOutput');
+    const charReadingTime = document.getElementById('charReadingTime');
+    const charTotalBytes = document.getElementById('charTotalBytes');
+    const charCopyBtn = document.getElementById('charCopyBtn');
+    const charClearBtn = document.getElementById('charClearBtn');
+
+    function escapeHtml(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function charDisplayName(ch) {
+        if (ch === ' ') return 'Space';
+        if (ch === '\n') return 'New line';
+        if (ch === '\t') return 'Tab';
+        if (ch === '\r') return 'CR';
+        if (/\s/.test(ch)) return 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+        return ch;
+    }
+
+    function compRow(label, count, total) {
+        const pct = total === 0 ? 0 : (count / total) * 100;
+        return '<div class="char-comp-row">' +
+            '<span class="char-comp-label">' + label + '</span>' +
+            '<div class="char-comp-track"><div class="char-comp-fill" style="width: ' + pct.toFixed(1) + '%;"></div></div>' +
+            '<span class="char-comp-count">' + count.toLocaleString() + '</span>' +
+        '</div>';
+    }
+
+    function updateCharCount() {
+        const text = charInput.value;
+        const chars = Array.from(text);
+        const total = chars.length;
+
+        let noSpaces = 0;
+        let upper = 0;
+        let lower = 0;
+        let otherLetters = 0;
+        let digits = 0;
+        let spaces = 0;
+        let otherWs = 0;
+        let symbols = 0;
+        const freq = new Map();
+
+        for (const ch of chars) {
+            freq.set(ch, (freq.get(ch) || 0) + 1);
+            if (/\s/.test(ch)) {
+                if (ch === ' ') spaces++;
+                else otherWs++;
+            } else {
+                noSpaces++;
+                if (/\p{Lu}/u.test(ch)) upper++;
+                else if (/\p{Ll}/u.test(ch)) lower++;
+                else if (/\p{L}/u.test(ch)) otherLetters++;
+                else if (/\p{N}/u.test(ch)) digits++;
+                else symbols++;
+            }
+        }
+
+        const words = (text.match(/\S+/g) || []).length;
+        const lines = text === '' ? 0 : text.split('\n').length;
+        const sentences = text.split(/[.!?…]+/).filter(s => s.trim().length > 0).length;
+        const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length;
+
+        statChars.textContent = total.toLocaleString();
+        statNoSpaces.textContent = noSpaces.toLocaleString();
+        statWords.textContent = words.toLocaleString();
+        statLines.textContent = lines.toLocaleString();
+        statSentences.textContent = sentences.toLocaleString();
+        statParagraphs.textContent = paragraphs.toLocaleString();
+
+        charComposition.innerHTML =
+            compRow('Uppercase', upper, total) +
+            compRow('Lowercase', lower, total) +
+            compRow('Other letters', otherLetters, total) +
+            compRow('Digits', digits, total) +
+            compRow('Spaces', spaces, total) +
+            compRow('Other whitespace', otherWs, total) +
+            compRow('Symbols', symbols, total);
+
+        if (total === 0) {
+            charFreqOutput.innerHTML = '<div class="strings-empty">Type something to see per-character counts</div>';
+        } else {
+            const entries = Array.from(freq.entries()).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+            const shown = entries.slice(0, 100);
+            charFreqOutput.innerHTML = shown.map(([ch, count]) => {
+                const pct = (count / total) * 100;
+                return '<div class="char-freq-item">' +
+                    '<span class="char-freq-char">' + escapeHtml(charDisplayName(ch)) + '</span>' +
+                    '<div class="char-comp-track"><div class="char-comp-fill" style="width: ' + pct.toFixed(1) + '%;"></div></div>' +
+                    '<span class="char-freq-count">' + count.toLocaleString() + '</span>' +
+                '</div>';
+            }).join('') + (entries.length > 100
+                ? '<div class="strings-empty">+' + (entries.length - 100).toLocaleString() + ' more characters</div>'
+                : '');
+        }
+
+        const seconds = Math.round(words / 200 * 60);
+        charReadingTime.textContent = seconds < 60
+            ? 'Reading time: ' + seconds + ' sec'
+            : 'Reading time: ~' + Math.round(seconds / 60) + ' min';
+        charTotalBytes.textContent = 'UTF-8 size: ' + new TextEncoder().encode(text).length.toLocaleString() + ' bytes';
+
+        if (charCopyBtn.classList.contains('copied')) {
+            setBtn(charCopyBtn, 'copy', 'Copy Summary');
+            charCopyBtn.classList.remove('copied');
+        }
+    }
+
+    charInput.addEventListener('input', updateCharCount);
+
+    charClearBtn.addEventListener('click', () => {
+        charInput.value = '';
+        updateCharCount();
+        charInput.focus();
+    });
+
+    charCopyBtn.addEventListener('click', async () => {
+        if (statChars.textContent === '0') return;
+        const summary =
+            'Characters (with spaces): ' + statChars.textContent + '\n' +
+            'Characters (no spaces): ' + statNoSpaces.textContent + '\n' +
+            'Words: ' + statWords.textContent + '\n' +
+            'Lines: ' + statLines.textContent + '\n' +
+            'Sentences: ' + statSentences.textContent + '\n' +
+            'Paragraphs: ' + statParagraphs.textContent;
+        try {
+            await navigator.clipboard.writeText(summary);
+            setBtn(charCopyBtn, 'check', 'Copied!');
+            charCopyBtn.classList.add('copied');
+            setTimeout(() => {
+                setBtn(charCopyBtn, 'copy', 'Copy Summary');
+                charCopyBtn.classList.remove('copied');
+            }, 2000);
+        } catch (error) {
+            console.error('Failed to copy:', error);
+        }
+    });
+
+    updateCharCount();
+})();
+
+// Image <-> Base64 Tool (file encode, realtime decode, magic-byte sniffing)
+(function initImageBase64() {
+    const dropzone = document.getElementById('imageDropzone');
+    if (!dropzone) return;
+
+    const fileInput = document.getElementById('imageFileInput');
+    const encodeMode = document.getElementById('imageEncodeMode');
+    const decodeMode = document.getElementById('imageDecodeMode');
+    const modeBtns = document.querySelectorAll('.image-mode-btn');
+    const encodeError = document.getElementById('imageEncodeError');
+    const encodeResult = document.getElementById('imageEncodeResult');
+    const encodePreview = document.getElementById('imageEncodePreview');
+    const encodeInfo = document.getElementById('imageEncodeInfo');
+    const encodeOutput = document.getElementById('imageEncodeOutput');
+    const encodeOutputLabel = document.getElementById('imageEncodeOutputLabel');
+    const dataUrlCheckbox = document.getElementById('imageDataUrl');
+    const encodeCopyBtn = document.getElementById('imageEncodeCopyBtn');
+    const encodeDownloadBtn = document.getElementById('imageEncodeDownloadBtn');
+    const encodeClearBtn = document.getElementById('imageEncodeClearBtn');
+    const decodeInput = document.getElementById('imageDecodeInput');
+    const decodeError = document.getElementById('imageDecodeError');
+    const decodeResult = document.getElementById('imageDecodeResult');
+    const decodePreview = document.getElementById('imageDecodePreview');
+    const decodeInfo = document.getElementById('imageDecodeInfo');
+    const decodeDownloadBtn = document.getElementById('imageDecodeDownloadBtn');
+    const decodeClearBtn = document.getElementById('imageDecodeClearBtn');
+
+    let currentDataUrl = '';
+    let currentBaseName = 'image';
+
+    function formatBytes(n) {
+        if (n < 1024) return n + ' B';
+        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+        return (n / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function infoRow(label, value) {
+        return '<div class="image-info-row"><span>' + label + '</span><strong>' + value + '</strong></div>';
+    }
+
+    // Identify image type from magic bytes (does not trust extensions/MIME)
+    function sniffImageMime(bytes) {
+        if (bytes.length >= 8 &&
+            bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47 &&
+            bytes[4] === 0x0D && bytes[5] === 0x0A && bytes[6] === 0x1A && bytes[7] === 0x0A) {
+            return 'image/png';
+        }
+        if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+            return 'image/jpeg';
+        }
+        if (bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 &&
+            bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61) {
+            return 'image/gif';
+        }
+        if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+            bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+            return 'image/webp';
+        }
+        if (bytes.length >= 2 && bytes[0] === 0x42 && bytes[1] === 0x4D) {
+            return 'image/bmp';
+        }
+        return '';
+    }
+
+    function mimeToExt(mime) {
+        const map = {
+            'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif',
+            'image/webp': 'webp', 'image/bmp': 'bmp', 'image/svg+xml': 'svg',
+            'image/avif': 'avif', 'image/x-icon': 'ico'
+        };
+        return map[mime] || 'img';
+    }
+
+    function base64ToBytes(b64) {
+        const bin = atob(b64);
+        const out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+        return out;
+    }
+
+    function loadPreview(img, src, ok, fail) {
+        img.onload = () => ok(img.naturalWidth, img.naturalHeight);
+        img.onerror = fail;
+        img.src = src;
+    }
+
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            modeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const encode = btn.dataset.mode === 'encode';
+            encodeMode.style.display = encode ? 'block' : 'none';
+            decodeMode.style.display = encode ? 'none' : 'block';
+        });
+    });
+
+    // ---- Encode ----
+    function handleFile(file) {
+        encodeError.textContent = '';
+        if (!file) return;
+        const looksImage = file.type
+            ? file.type.startsWith('image/')
+            : /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)$/i.test(file.name || '');
+        if (!looksImage) {
+            encodeError.textContent = 'Please select an image file (PNG, JPEG, GIF, WebP, SVG…).';
+            return;
+        }
+        currentBaseName = (file.name || 'image').replace(/\.[^.]+$/, '') || 'image';
+        const reader = new FileReader();
+        reader.onload = () => {
+            currentDataUrl = reader.result;
+            loadPreview(encodePreview, currentDataUrl, (w, h) => {
+                const raw = (currentDataUrl.split(',')[1] || '');
+                encodeResult.style.display = 'block';
+                let info = infoRow('File', file.name || 'pasted image') +
+                    infoRow('Type', file.type || 'unknown') +
+                    infoRow('Original size', formatBytes(file.size)) +
+                    infoRow('Base64 size', raw.length.toLocaleString() + ' chars (~' + Math.round(raw.length / Math.max(file.size, 1) * 100) + '%)') +
+                    infoRow('Dimensions', w.toLocaleString() + ' × ' + h.toLocaleString() + ' px');
+                if (raw.length > 2000000) {
+                    info += infoRow('Note', 'Large output — copying may be slow');
+                }
+                encodeInfo.innerHTML = info;
+                renderEncodeOutput();
+                encodeResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, () => {
+                encodeError.textContent = 'Could not display that file as an image.';
+                encodeResult.style.display = 'none';
+            });
+        };
+        reader.onerror = () => {
+            encodeError.textContent = 'Could not read the file.';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function renderEncodeOutput() {
+        const withPrefix = dataUrlCheckbox.checked;
+        encodeOutput.value = withPrefix ? currentDataUrl : (currentDataUrl.split(',')[1] || '');
+        encodeOutputLabel.textContent = withPrefix ? 'Data URL output:' : 'Raw Base64 output:';
+    }
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInput.click();
+        }
+    });
+    fileInput.addEventListener('change', () => {
+        handleFile(fileInput.files[0]);
+        fileInput.value = '';
+    });
+    ['dragenter', 'dragover'].forEach(ev => dropzone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    }));
+    ['dragleave', 'drop'].forEach(ev => dropzone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+    }));
+    dropzone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+
+    dataUrlCheckbox.addEventListener('change', renderEncodeOutput);
+
+    encodeCopyBtn.addEventListener('click', async () => {
+        if (!encodeOutput.value) return;
+        try {
+            await navigator.clipboard.writeText(encodeOutput.value);
+            setBtn(encodeCopyBtn, 'check', 'Copied!');
+            setTimeout(() => setBtn(encodeCopyBtn, 'copy', 'Copy'), 2000);
+        } catch (error) {
+            console.error('Failed to copy:', error);
+        }
+    });
+
+    encodeDownloadBtn.addEventListener('click', () => {
+        if (!encodeOutput.value) return;
+        const blob = new Blob([encodeOutput.value], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = currentBaseName + '.b64.txt';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
+    encodeClearBtn.addEventListener('click', () => {
+        currentDataUrl = '';
+        encodeOutput.value = '';
+        encodeResult.style.display = 'none';
+        encodeError.textContent = '';
+    });
+
+    // ---- Decode (realtime) ----
+    function updateDecode() {
+        const rawInput = decodeInput.value.trim();
+        decodeError.textContent = '';
+        decodeResult.style.display = 'none';
+        if (!rawInput) return;
+
+        let mime = '';
+        let b64 = rawInput.replace(/\s+/g, '');
+        const dm = b64.match(/^data:([^;,]+)?;base64,([\s\S]*)$/);
+        if (dm) {
+            mime = dm[1] || '';
+            b64 = dm[2];
+        }
+        if (b64.length % 4 === 1 || (b64 !== '' && !/^[A-Za-z0-9+/]*={0,2}$/.test(b64))) {
+            decodeError.textContent = 'Invalid Base64: contains illegal characters.';
+            return;
+        }
+        let bytes;
+        try {
+            bytes = base64ToBytes(b64);
+        } catch (err) {
+            decodeError.textContent = 'Invalid Base64 input.';
+            return;
+        }
+        if (bytes.length === 0) {
+            decodeError.textContent = 'Nothing to decode.';
+            return;
+        }
+
+        const sniffed = sniffImageMime(bytes);
+        if (sniffed) {
+            mime = sniffed;
+        } else if (!mime || !mime.startsWith('image/')) {
+            // Text-based formats (e.g. SVG) have no magic bytes — sniff markup instead
+            let isSvg = false;
+            if (bytes.length < 2000000) {
+                try {
+                    isSvg = /^\s*<svg[\s>]/.test(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+                } catch (err) { isSvg = false; }
+            }
+            if (isSvg) {
+                mime = 'image/svg+xml';
+            } else {
+                decodeError.textContent = 'Decoded data is not a recognized image (PNG, JPEG, GIF, WebP, BMP, SVG).';
+                return;
+            }
+        }
+
+        const dataUrl = 'data:' + mime + ';base64,' + b64;
+        loadPreview(decodePreview, dataUrl, (w, h) => {
+            decodeInfo.innerHTML = infoRow('Detected type', mime) +
+                infoRow('Decoded size', formatBytes(bytes.length)) +
+                infoRow('Dimensions', w.toLocaleString() + ' × ' + h.toLocaleString() + ' px');
+            decodeDownloadBtn.href = dataUrl;
+            decodeDownloadBtn.download = 'decoded-image.' + mimeToExt(mime);
+            decodeResult.style.display = 'block';
+        }, () => {
+            decodeError.textContent = 'Decoded data could not be displayed as an image.';
+        });
+    }
+
+    decodeInput.addEventListener('input', updateDecode);
+
+    decodeClearBtn.addEventListener('click', () => {
+        decodeInput.value = '';
+        updateDecode();
+        decodeInput.focus();
+    });
+})();
 
 // Wait for bcrypt to load before initializing
 window.initBcrypt = function() {
@@ -746,7 +1374,7 @@ window.initBcrypt = function() {
 
         bcryptResultValue.textContent = hash;
         bcryptResultContainer.classList.add('visible');
-        bcryptCopyBtn.textContent = '📋 Copy to Clipboard';
+        setBtn(bcryptCopyBtn, 'copy', 'Copy to Clipboard');
         bcryptCopyBtn.classList.remove('copied');
     } catch (error) {
         console.error('Error generating bcrypt hash:', error);
@@ -758,10 +1386,10 @@ window.initBcrypt = function() {
 bcryptCopyBtn.addEventListener('click', async () => {
     try {
         await navigator.clipboard.writeText(bcryptResultValue.textContent);
-        bcryptCopyBtn.textContent = '✓ Copied!';
+        setBtn(bcryptCopyBtn, 'check', 'Copied!');
         bcryptCopyBtn.classList.add('copied');
         setTimeout(() => {
-            bcryptCopyBtn.textContent = '📋 Copy to Clipboard';
+            setBtn(bcryptCopyBtn, 'copy', 'Copy to Clipboard');
             bcryptCopyBtn.classList.remove('copied');
         }, 2000);
     } catch (error) {
@@ -788,7 +1416,10 @@ bcryptVerifyBtn.addEventListener('click', async () => {
     try {
         const isValid = await window.bcrypt.compare(text, hash);
 
-        bcryptVerifyResultValue.textContent = isValid ? '✓ Valid - The hash matches the plain text!' : '✗ Invalid - The hash does not match the plain text.';
+        bcryptVerifyResultValue.innerHTML = isValid
+            ? '<i data-lucide="circle-check"></i> Valid - The hash matches the plain text!'
+            : '<i data-lucide="circle-x"></i> Invalid - The hash does not match the plain text.';
+        refreshIcons();
         bcryptVerifyResultValue.style.color = isValid ? 'var(--success)' : 'var(--danger)';
         bcryptVerifyResultValue.style.background = isValid ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
         bcryptVerifyResultValue.style.borderColor = isValid ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
@@ -801,3 +1432,6 @@ bcryptVerifyBtn.addEventListener('click', async () => {
     }
 });
 }
+
+// Render all static Lucide icons on initial load
+refreshIcons();

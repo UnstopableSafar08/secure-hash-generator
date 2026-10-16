@@ -4,26 +4,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Tools</title>
+    <title>Secure Tools — Hash, Password, Bcrypt, Base64 &amp; Char Count</title>
+    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder and character counter. All processing happens locally in your browser — no data leaves your device.">
+    <meta name="theme-color" content="#0f172a">
+    <meta property="og:title" content="Secure Tools">
+    <meta property="og:description" content="Hash, password, bcrypt, Base64 and char-count utilities that run 100% locally in your browser.">
+    <meta property="og:type" content="website">
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="assets/img/icon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css?v=9">
+    <script src="assets/js/lucide.min.js?v=1.58.0"></script>
 </head>
 
 <body>
-    <div class="container">
-        <h1>🔐 Secure Tools</h1>
+    <a class="skip-link" href="#main">Skip to tool</a>
+    <div class="app">
+        <aside class="sidebar card" aria-label="Tools">
+            <div class="brand">
+                <i data-lucide="shield-check" class="brand-icon"></i>
+                <div>
+                    <div class="brand-name">Secure Tools</div>
+                    <div class="brand-tag">100% client-side</div>
+                </div>
+            </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="hash">Hash Generator</button>
-            <button class="tab-btn" data-tab="password">Password Generator</button>
-            <button class="tab-btn" data-tab="random">Random String Generator</button>
-            <button class="tab-btn" data-tab="bcrypt">Bcrypt Generator</button>
-        </div>
+            <div class="tool-search">
+                <i data-lucide="search"></i>
+                <input type="search" id="toolSearch" placeholder="Search tools..." aria-label="Search tools" autocomplete="off">
+            </div>
+
+            <nav class="tool-nav" aria-label="Tool list">
+                <button class="nav-btn active" data-tool="hash" aria-current="page">
+                    <i data-lucide="hash"></i>
+                    <span class="nav-text"><span class="nav-label">Hash Generator</span><span class="nav-desc">SHA-256, SHA-512, SHA-1, MD5</span></span>
+                </button>
+                <button class="nav-btn" data-tool="password">
+                    <i data-lucide="key-round"></i>
+                    <span class="nav-text"><span class="nav-label">Password Generator</span><span class="nav-desc">Secure random passwords</span></span>
+                </button>
+                <button class="nav-btn" data-tool="random">
+                    <i data-lucide="dices"></i>
+                    <span class="nav-text"><span class="nav-label">Random Strings</span><span class="nav-desc">Keys, tokens &amp; IDs in bulk</span></span>
+                </button>
+                <button class="nav-btn" data-tool="bcrypt">
+                    <i data-lucide="fingerprint"></i>
+                    <span class="nav-text"><span class="nav-label">Bcrypt</span><span class="nav-desc">Hash &amp; verify passwords</span></span>
+                </button>
+                <button class="nav-btn" data-tool="base64">
+                    <i data-lucide="binary"></i>
+                    <span class="nav-text"><span class="nav-label">Base64 Tool</span><span class="nav-desc">Realtime encode &amp; decode</span></span>
+                </button>
+                <button class="nav-btn" data-tool="charCount">
+                    <i data-lucide="case-sensitive"></i>
+                    <span class="nav-text"><span class="nav-label">Char Count</span><span class="nav-desc">Chars, words, frequency</span></span>
+                </button>
+                <button class="nav-btn" data-tool="image">
+                    <i data-lucide="image"></i>
+                    <span class="nav-text"><span class="nav-label">Image Base64</span><span class="nav-desc">Images to Base64 &amp; back</span></span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="trust-badge"><i data-lucide="lock"></i> No data leaves your browser</div>
+                <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a></p>
+            </div>
+        </aside>
+
+        <main class="main card" id="main">
+            <header class="tool-header">
+                <h1 id="toolTitle">Hash Generator</h1>
+                <p id="toolDesc">Generate SHA-256, SHA-384, SHA-512, SHA-1 and MD5 digests instantly.</p>
+            </header>
 
         <div class="tab-content active" id="hashTab">
             <div class="input-group">
@@ -42,12 +99,12 @@
                 </div>
             </div>
 
-            <button class="generate-btn" id="generateBtn">Generate Hash</button>
+            <button class="generate-btn" id="generateBtn"><i data-lucide="hash"></i> Generate Hash</button>
 
             <div class="result-container" id="resultContainer">
                 <div class="result-label" id="resultLabel">SHA-256 Hash:</div>
                 <div class="result-value" id="resultValue"></div>
-                <button class="copy-btn" id="copyBtn">📋 Copy to Clipboard</button>
+                <button class="copy-btn" id="copyBtn"><i data-lucide="copy"></i> Copy to Clipboard</button>
             </div>
 
             <div class="info">
@@ -85,10 +142,10 @@
                 </div>
                 <div class="option-group symbols-group">
                     <div>
-                        <input type="checkbox" id="symbols" checked>
+                        <input type="checkbox" id="symbols">
                         <label for="symbols">Symbols</label>
                     </div>
-                    <input type="text" class="custom-symbols-input-inline" id="passwordCustomSymbols" placeholder="!@#$%^&*">
+                    <input type="text" class="custom-symbols-input-inline" id="passwordCustomSymbols" value="!@#$%^&amp;*" placeholder="!@#$%^&*">
                 </div>
             </div>
 
@@ -106,8 +163,8 @@
             </div>
 
             <div class="password-actions">
-                <button class="generate-password-btn" id="generatePasswordBtn">🎲 Generate Password</button>
-                <button class="copy-password-btn" id="copyPasswordBtn">📋 Copy</button>
+                <button class="generate-password-btn" id="generatePasswordBtn"><i data-lucide="dices"></i> Generate Password</button>
+                <button class="copy-password-btn" id="copyPasswordBtn"><i data-lucide="copy"></i> Copy</button>
             </div>
 
             <div class="info">
@@ -170,8 +227,8 @@
             </div>
 
             <div class="strings-actions">
-                <button class="generate-strings-btn" id="generateStringsBtn">🎲 Generate Strings</button>
-                <button class="copy-all-strings-btn" id="copyAllStringsBtn">📋 Copy All</button>
+                <button class="generate-strings-btn" id="generateStringsBtn"><i data-lucide="dices"></i> Generate Strings</button>
+                <button class="copy-all-strings-btn" id="copyAllStringsBtn"><i data-lucide="copy"></i> Copy All</button>
             </div>
 
             <div class="info">
@@ -205,12 +262,12 @@
                     </div>
                 </div>
 
-                <button class="generate-btn" id="bcryptGenerateBtn">Generate Bcrypt Hash</button>
+                <button class="generate-btn" id="bcryptGenerateBtn"><i data-lucide="lock"></i> Generate Bcrypt Hash</button>
 
                 <div class="result-container" id="bcryptResultContainer">
                     <div class="result-label">Bcrypt Hash:</div>
                     <div class="result-value" id="bcryptResultValue"></div>
-                    <button class="copy-btn" id="bcryptCopyBtn">📋 Copy to Clipboard</button>
+                    <button class="copy-btn" id="bcryptCopyBtn"><i data-lucide="copy"></i> Copy to Clipboard</button>
                 </div>
             </div>
 
@@ -225,7 +282,7 @@
                     <textarea id="bcryptHashInput" placeholder="Paste the bcrypt hash here..."></textarea>
                 </div>
 
-                <button class="generate-btn" id="bcryptVerifyBtn">Verify Hash</button>
+                <button class="generate-btn" id="bcryptVerifyBtn"><i data-lucide="shield-check"></i> Verify Hash</button>
 
                 <div class="result-container" id="bcryptVerifyResultContainer">
                     <div class="result-label">Verification Result:</div>
@@ -240,11 +297,191 @@
             </div>
         </div>
 
-        <footer class="footer">
-            <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank">Sagar Malla</a></p>
-        </footer>
+        <div class="tab-content" id="base64Tab">
+            <div class="base64-mode-toggle">
+                <button class="base64-mode-btn active" data-mode="encode">Encode</button>
+                <button class="base64-mode-btn" data-mode="decode">Decode</button>
+            </div>
+
+            <div class="input-group">
+                <label for="base64Input" id="base64InputLabel">Enter text to encode:</label>
+                <textarea id="base64Input" placeholder="Type or paste your text here..."></textarea>
+            </div>
+
+            <div class="base64-options">
+                <div class="option-group">
+                    <input type="checkbox" id="base64UrlSafe">
+                    <label for="base64UrlSafe">URL-safe output (uses -_ instead of +/)</label>
+                </div>
+                <div class="base64-actions-inline">
+                    <button class="base64-swap-btn" id="base64SwapBtn" title="Swap input/output"><i data-lucide="arrow-up-down"></i> Swap</button>
+                    <button class="base64-clear-btn" id="base64ClearBtn"><i data-lucide="trash-2"></i> Clear</button>
+                </div>
+            </div>
+
+            <div class="result-container visible" id="base64ResultContainer">
+                <div class="result-label" id="base64ResultLabel">Base64 Output:</div>
+                <div class="result-value" id="base64OutputValue"></div>
+                <div class="base64-error" id="base64Error"></div>
+                <div class="base64-meta">
+                    <span id="base64InputCount">Input: 0 chars</span>
+                    <span id="base64OutputCount">Output: 0 chars</span>
+                </div>
+                <button class="copy-btn" id="base64CopyBtn"><i data-lucide="copy"></i> Copy to Clipboard</button>
+            </div>
+
+            <div class="info">
+                <p><strong>Security Note:</strong> Base64 is an encoding, not encryption. It does not protect data.
+                    All conversion is performed locally in your browser. No data is sent to any server. UTF-8 text
+                    (including emoji) is fully supported.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="charCountTab">
+            <div class="input-group">
+                <label for="charCountInput">Enter or paste your text:</label>
+                <textarea id="charCountInput" placeholder="Type or paste your text here..."></textarea>
+            </div>
+
+            <div class="char-stats">
+                <div class="char-stat-card">
+                    <div class="char-stat-icon"><i data-lucide="type"></i></div>
+                    <div class="char-stat-value" id="statChars">0</div>
+                    <div class="char-stat-label">Characters</div>
+                </div>
+                <div class="char-stat-card">
+                    <div class="char-stat-icon"><i data-lucide="hash"></i></div>
+                    <div class="char-stat-value" id="statNoSpaces">0</div>
+                    <div class="char-stat-label">No spaces</div>
+                </div>
+                <div class="char-stat-card">
+                    <div class="char-stat-icon"><i data-lucide="align-left"></i></div>
+                    <div class="char-stat-value" id="statWords">0</div>
+                    <div class="char-stat-label">Words</div>
+                </div>
+                <div class="char-stat-card">
+                    <div class="char-stat-icon"><i data-lucide="list"></i></div>
+                    <div class="char-stat-value" id="statLines">0</div>
+                    <div class="char-stat-label">Lines</div>
+                </div>
+                <div class="char-stat-card">
+                    <div class="char-stat-icon"><i data-lucide="quote"></i></div>
+                    <div class="char-stat-value" id="statSentences">0</div>
+                    <div class="char-stat-label">Sentences</div>
+                </div>
+                <div class="char-stat-card">
+                    <div class="char-stat-icon"><i data-lucide="pilcrow"></i></div>
+                    <div class="char-stat-value" id="statParagraphs">0</div>
+                    <div class="char-stat-label">Paragraphs</div>
+                </div>
+            </div>
+
+            <div class="char-section">
+                <div class="char-section-title"><i data-lucide="chart-no-axes-column"></i> Composition</div>
+                <div id="charComposition"></div>
+            </div>
+
+            <div class="char-section">
+                <div class="char-section-title"><i data-lucide="list-ordered"></i> Character frequency</div>
+                <div class="char-freq-list" id="charFreqOutput">
+                    <div class="strings-empty">Type something to see per-character counts</div>
+                </div>
+            </div>
+
+            <div class="char-meta">
+                <span id="charReadingTime">Reading time: 0 sec</span>
+                <span id="charTotalBytes">UTF-8 size: 0 bytes</span>
+            </div>
+
+            <div class="strings-actions">
+                <button class="copy-all-strings-btn" id="charCopyBtn"><i data-lucide="copy"></i> Copy Summary</button>
+                <button class="base64-clear-btn" id="charClearBtn"><i data-lucide="trash-2"></i> Clear</button>
+            </div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> Counting is performed locally in your browser as you type.
+                    No data is sent to any server. "Characters" counts every character including spaces,
+                    tabs and new lines. Emoji are counted as single characters.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="imageTab">
+            <div class="image-mode-toggle">
+                <button class="image-mode-btn active" data-mode="encode">Encode</button>
+                <button class="image-mode-btn" data-mode="decode">Decode</button>
+            </div>
+
+            <div id="imageEncodeMode">
+                <div class="dropzone" id="imageDropzone" role="button" tabindex="0" aria-label="Select an image file to encode">
+                    <i data-lucide="image-plus"></i>
+                    <div class="dropzone-text"><strong>Drop an image here</strong> or click to browse</div>
+                    <div class="dropzone-hint">PNG, JPEG, GIF, WebP, SVG… everything stays on your device</div>
+                    <input type="file" id="imageFileInput" accept="image/*" hidden>
+                </div>
+                <div class="image-error" id="imageEncodeError"></div>
+
+                <div id="imageEncodeResult" style="display: none;">
+                    <div class="image-preview-wrap">
+                        <img id="imageEncodePreview" class="image-preview" alt="Selected image preview">
+                    </div>
+                    <div class="image-info" id="imageEncodeInfo"></div>
+                    <div class="input-group">
+                        <label for="imageEncodeOutput" id="imageEncodeOutputLabel">Data URL output:</label>
+                        <textarea id="imageEncodeOutput" readonly placeholder="Base64 output will appear here..."></textarea>
+                    </div>
+                    <div class="base64-options">
+                        <div class="option-group">
+                            <input type="checkbox" id="imageDataUrl" checked>
+                            <label for="imageDataUrl">Include data: URL prefix</label>
+                        </div>
+                    </div>
+                    <div class="strings-actions">
+                        <button class="copy-all-strings-btn" id="imageEncodeCopyBtn"><i data-lucide="copy"></i> Copy</button>
+                        <button class="copy-all-strings-btn" id="imageEncodeDownloadBtn"><i data-lucide="download"></i> .txt</button>
+                        <button class="base64-clear-btn" id="imageEncodeClearBtn"><i data-lucide="trash-2"></i> Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="imageDecodeMode" style="display: none;">
+                <div class="input-group">
+                    <label for="imageDecodeInput">Paste Base64 or data URL:</label>
+                    <textarea id="imageDecodeInput" placeholder="Paste a data:image/...;base64,... URL or raw Base64 here..."></textarea>
+                </div>
+                <div class="image-error" id="imageDecodeError"></div>
+                <div id="imageDecodeResult" style="display: none;">
+                    <div class="image-preview-wrap">
+                        <img id="imageDecodePreview" class="image-preview" alt="Decoded image preview">
+                    </div>
+                    <div class="image-info" id="imageDecodeInfo"></div>
+                    <div class="strings-actions">
+                        <a class="copy-all-strings-btn image-download-link" id="imageDecodeDownloadBtn" href="#" download="decoded-image"><i data-lucide="download"></i> Download image</a>
+                        <button class="base64-clear-btn" id="imageDecodeClearBtn"><i data-lucide="trash-2"></i> Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> Encoding and decoding happen locally in your browser — images
+                    never leave your device. Note that Base64 inflates data by ~33%, so large images produce
+                    very long output. Recognized formats: PNG, JPEG, GIF, WebP, BMP and SVG.</p>
+            </div>
+        </div>
+
+            <footer class="footer">
+                <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a> · Secure Tools runs entirely in your browser.</p>
+            </footer>
+        </main>
     </div>
 
+    <script>
+        // Register offline service worker (http(s) only; skipped on file://)
+        if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js').catch(function() {});
+            });
+        }
+    </script>
     <script>
         // Load bcryptjs library
         (function() {
@@ -264,7 +501,7 @@
             document.head.appendChild(script);
         })();
     </script>
-    <script src="assets/js/script.js"></script>
+    <script src="assets/js/script.js?v=9"></script>
 </body>
 
 </html>
