@@ -1835,6 +1835,7 @@ textarea::placeholder {
     .main {
         width: 100%;
         padding: 24px 20px;
+        scroll-margin-top: 20px;
     }
 
     .tool-header h1 {
@@ -1850,6 +1851,7 @@ textarea::placeholder {
     .main {
         padding: 24px 16px;
         border-radius: 16px;
+        scroll-margin-top: 12px;
     }
 
     .sidebar {

@@ -41,6 +41,33 @@ function currentToolFromHash() {
     return Object.prototype.hasOwnProperty.call(TOOLS, id) ? id : 'hash';
 }
 
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+// Bring the clicked tool's UI in front of the user.
+// - Programmatic focus lands on the tool's own section (never on its first input),
+//   so mobile browsers do not pop up the on-screen keyboard after a tap.
+// - On stacked mobile layouts the sidebar sits above the tools, so the main
+//   panel is scrolled into view. No-op when the panel is already fully visible
+//   (e.g. desktop sticky-sidebar layout).
+function revealActiveTool() {
+    const panel = document.getElementById(currentToolFromHash() + 'Tab');
+    if (!panel) return;
+
+    panel.setAttribute('tabindex', '-1');
+    panel.focus({ preventScroll: true });
+
+    const main = document.querySelector('.main');
+    if (!main) return;
+    const rect = main.getBoundingClientRect();
+    const fullyVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+    if (!fullyVisible) {
+        main.scrollIntoView({
+            behavior: prefersReducedMotion.matches ? 'auto' : 'smooth',
+            block: 'start'
+        });
+    }
+}
+
 function renderRoute() {
     const id = currentToolFromHash();
     navBtns.forEach(b => {
@@ -55,7 +82,11 @@ function renderRoute() {
     if (toolTitle) toolTitle.textContent = TOOLS[id].title;
     if (toolDesc) toolDesc.textContent = TOOLS[id].desc;
     document.title = TOOLS[id].title + ' · Secure Tools';
+    if (firstRender) firstRender = false;
+    else revealActiveTool();
 }
+
+let firstRender = true;
 
 navBtns.forEach(btn => {
     btn.addEventListener('click', () => {
