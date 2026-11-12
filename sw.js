@@ -1,5 +1,5 @@
 /* Secure Tools offline support: cache-first app shell, same-origin GET only. */
-const CACHE = 'secure-tools-v3';
+const CACHE = 'secure-tools-v4';
 const CORE = [
   './',
   './index.html',

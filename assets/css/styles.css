@@ -411,31 +411,8 @@ textarea::placeholder {
 }
 
 .case-option {
-    padding: 11px 12px;
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    background: var(--glass);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    font-size: 0.8rem;
-    font-weight: 600;
+    width: 100%;
     text-align: center;
-}
-
-.case-option:hover {
-    border-color: var(--primary);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
-}
-
-.case-option.active {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    border-color: transparent;
-    color: white;
-    box-shadow:
-        0 8px 25px rgba(99, 102, 241, 0.4),
-        0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
 .case-output {
