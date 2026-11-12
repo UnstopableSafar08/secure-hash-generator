@@ -1,6 +1,6 @@
 # Secure Tools
 
-A modern, secure web application for generating hashes, passwords, random strings, and bcrypt hashes. All operations are performed locally in your browser using the Web Crypto API - no data is sent to any server.
+A modern, secure web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, and counting characters. All operations are performed locally in your browser using the Web Crypto API - no data is sent to any server.
 
 ## Features
 
@@ -48,6 +48,13 @@ A modern, secure web application for generating hashes, passwords, random string
 - Composition breakdown: uppercase, lowercase, other letters, digits, spaces, other whitespace, symbols
 - Per-character frequency table, reading time, and UTF-8 byte size
 - Copyable summary
+
+### 🔠 Convert Case
+- Realtime conversion as you type
+- UPPERCASE, lowercase, Title Case and Sentence case
+- tOGGLE cASE and aLtErNaTiNg cAsE
+- camelCase, snake_case, kebab-case and CONSTANT_CASE for code-friendly output
+- Copy converted text to clipboard or clear with one click
 
 ### 🖼️ Image Base64
 - Encode: drag & drop (or browse) any image to a Base64 data URL, with preview, file info, and dimensions
@@ -107,7 +114,7 @@ secure-hash-generator/
 ## Navigation
 
 The sidebar lists all tools. Every tool is deep-linkable via hash routes
-(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`),
+(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`, `#/case`, `#/image`),
 so bookmarks and back/forward buttons work. The sidebar search filters the
 tool list, and the layout collapses to a top nav on small screens.
 

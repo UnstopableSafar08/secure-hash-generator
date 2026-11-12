@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Tools — Hash, Password, Bcrypt, Base64 &amp; Char Count</title>
-    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder and character counter. All processing happens locally in your browser — no data leaves your device.">
+    <title>Secure Tools — Hash, Password, Bcrypt, Base64, Case Converter &amp; Char Count</title>
+    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder, case converter and character counter. All processing happens locally in your browser — no data leaves your device.">
     <meta name="theme-color" content="#0f172a">
     <meta property="og:title" content="Secure Tools">
-    <meta property="og:description" content="Hash, password, bcrypt, Base64 and char-count utilities that run 100% locally in your browser.">
+    <meta property="og:description" content="Hash, password, bcrypt, Base64, case-conversion and char-count utilities that run 100% locally in your browser.">
     <meta property="og:type" content="website">
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
@@ -63,6 +63,10 @@
                 <button class="nav-btn" data-tool="charCount">
                     <i data-lucide="case-sensitive"></i>
                     <span class="nav-text"><span class="nav-label">Char Count</span><span class="nav-desc">Chars, words, frequency</span></span>
+                </button>
+                <button class="nav-btn" data-tool="case">
+                    <i data-lucide="case-upper"></i>
+                    <span class="nav-text"><span class="nav-label">Convert Case</span><span class="nav-desc">Upper, lower &amp; title case</span></span>
                 </button>
                 <button class="nav-btn" data-tool="image">
                     <i data-lucide="image"></i>
@@ -405,6 +409,48 @@
             </div>
         </div>
 
+        <div class="tab-content" id="caseTab">
+            <div class="input-group">
+                <label for="caseInput">Enter or paste your text:</label>
+                <textarea id="caseInput" placeholder="Type or paste your text here..."></textarea>
+            </div>
+
+            <div class="input-group">
+                <label>Choose a case conversion:</label>
+                <div class="case-options" role="group" aria-label="Case conversions">
+                    <button class="case-option active" data-case="upper" aria-pressed="true">UPPERCASE</button>
+                    <button class="case-option" data-case="lower" aria-pressed="false">lowercase</button>
+                    <button class="case-option" data-case="title" aria-pressed="false">Title Case</button>
+                    <button class="case-option" data-case="sentence" aria-pressed="false">Sentence case</button>
+                    <button class="case-option" data-case="toggle" aria-pressed="false">tOGGLE cASE</button>
+                    <button class="case-option" data-case="alternating" aria-pressed="false">aLtErNaTiNg cAsE</button>
+                    <button class="case-option" data-case="camel" aria-pressed="false">camelCase</button>
+                    <button class="case-option" data-case="snake" aria-pressed="false">snake_case</button>
+                    <button class="case-option" data-case="kebab" aria-pressed="false">kebab-case</button>
+                    <button class="case-option" data-case="constant" aria-pressed="false">CONSTANT_CASE</button>
+                </div>
+            </div>
+
+            <div class="result-container visible" id="caseResultContainer">
+                <div class="result-label" id="caseResultLabel">UPPERCASE Output:</div>
+                <textarea class="case-output" id="caseOutput" readonly placeholder="Converted text will appear here..."></textarea>
+                <div class="base64-meta">
+                    <span id="caseInputCount">Input: 0 chars</span>
+                    <span id="caseOutputCount">Output: 0 chars</span>
+                </div>
+                <div class="strings-actions case-actions">
+                    <button class="copy-all-strings-btn" id="caseCopyBtn"><i data-lucide="copy"></i> Copy</button>
+                    <button class="base64-clear-btn" id="caseClearBtn"><i data-lucide="trash-2"></i> Clear</button>
+                </div>
+            </div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> Case conversion is performed locally in your browser as you type.
+                    No data is sent to any server. Title and sentence case understand Unicode letters, and
+                    camelCase, snake_case and kebab-case split existing words automatically.</p>
+            </div>
+        </div>
+
         <div class="tab-content" id="imageTab">
             <div class="image-mode-toggle">
                 <button class="image-mode-btn active" data-mode="encode">Encode</button>
@@ -501,7 +547,7 @@
             document.head.appendChild(script);
         })();
     </script>
-    <script src="assets/js/script.js?v=10"></script>
+    <script src="assets/js/script.js?v=11"></script>
 </body>
 
 </html>

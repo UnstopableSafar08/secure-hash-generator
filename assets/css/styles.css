@@ -402,6 +402,59 @@ textarea::placeholder {
         0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
+/* Convert Case Tool */
+.case-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.case-option {
+    padding: 11px 12px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--glass);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.case-option:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
+}
+
+.case-option.active {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-color: transparent;
+    color: white;
+    box-shadow:
+        0 8px 25px rgba(99, 102, 241, 0.4),
+        0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.case-output {
+    min-height: 150px;
+    margin-bottom: 4px;
+    background: rgba(16, 185, 129, 0.06);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.case-output:focus {
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.case-actions {
+    margin-top: 12px;
+}
+
 .generate-btn {
     width: 100%;
     padding: 14px;
@@ -1730,6 +1783,7 @@ textarea::placeholder {
 .tool-nav .nav-btn:nth-child(5) { animation-delay: 0.25s; }
 .tool-nav .nav-btn:nth-child(6) { animation-delay: 0.3s; }
 .tool-nav .nav-btn:nth-child(7) { animation-delay: 0.35s; }
+.tool-nav .nav-btn:nth-child(8) { animation-delay: 0.4s; }
 
 /* Stat cards pop in on every route render */
 .tab-content.active .char-stat-card {
@@ -1769,6 +1823,7 @@ textarea::placeholder {
 .base64-clear-btn:active,
 .nav-btn:active,
 .algorithm-btn:active,
+.case-option:active,
 .bcrypt-mode-btn:active,
 .base64-mode-btn:active,
 .image-mode-btn:active {

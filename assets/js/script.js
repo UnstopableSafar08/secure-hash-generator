@@ -33,6 +33,7 @@ const TOOLS = {
     bcrypt: { title: 'Bcrypt', desc: 'Hash passwords with bcrypt and verify hashes against plain text.' },
     base64: { title: 'Base64 Tool', desc: 'Encode and decode Base64 in realtime, including URL-safe output.' },
     charCount: { title: 'Char Count', desc: 'Count characters, words, lines and inspect character frequency.' },
+    case: { title: 'Convert Case', desc: 'Convert text between upper, lower, title, sentence and code cases.' },
     image: { title: 'Image Base64', desc: 'Convert images to Base64 data URLs and decode Base64 back into images.' }
 };
 
@@ -1064,6 +1065,143 @@ copyAllStringsBtn.addEventListener('click', async () => {
     });
 
     updateCharCount();
+})();
+
+// Convert Case Tool (realtime case conversions, Unicode-aware)
+(function initCaseConverter() {
+    const caseInput = document.getElementById('caseInput');
+    if (!caseInput) return;
+
+    const caseOutput = document.getElementById('caseOutput');
+    const caseResultLabel = document.getElementById('caseResultLabel');
+    const caseInputCount = document.getElementById('caseInputCount');
+    const caseOutputCount = document.getElementById('caseOutputCount');
+    const caseCopyBtn = document.getElementById('caseCopyBtn');
+    const caseClearBtn = document.getElementById('caseClearBtn');
+    const caseModeBtns = document.querySelectorAll('.case-option');
+
+    let caseMode = 'upper';
+
+    function splitWords(text) {
+        const spaced = text
+            .replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, '$1 $2')
+            .replace(/(\p{Lu}+)(\p{Lu}\p{Ll})/gu, '$1 $2');
+        return spaced.match(/[\p{L}\p{N}]+/gu) || [];
+    }
+
+    function capitalizeWord(word) {
+        const chars = Array.from(word.toLowerCase());
+        if (chars.length === 0) return '';
+        return chars[0].toUpperCase() + chars.slice(1).join('');
+    }
+
+    function titleCase(text) {
+        return text.replace(/[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)*/gu, word => capitalizeWord(word));
+    }
+
+    function sentenceCase(text) {
+        return text.toLowerCase().replace(
+            /(^\s*|[.!?…]\s+|\n\s*)(\p{Ll})/gu,
+            (match, prefix, letter) => prefix + letter.toUpperCase()
+        );
+    }
+
+    function toggleCase(text) {
+        return text.replace(/\p{L}/gu, ch =>
+            ch === ch.toLowerCase() ? ch.toUpperCase() : ch.toLowerCase()
+        );
+    }
+
+    function alternatingCase(text) {
+        let letterIndex = 0;
+        return Array.from(text).map(ch => {
+            if (!/\p{L}/u.test(ch)) return ch;
+            return letterIndex++ % 2 === 0 ? ch.toUpperCase() : ch.toLowerCase();
+        }).join('');
+    }
+
+    function lowerWords(text) {
+        return splitWords(text).map(word => word.toLowerCase());
+    }
+
+    const caseConverters = {
+        upper: { label: 'UPPERCASE', convert: text => text.toUpperCase() },
+        lower: { label: 'lowercase', convert: text => text.toLowerCase() },
+        title: { label: 'Title Case', convert: titleCase },
+        sentence: { label: 'Sentence case', convert: sentenceCase },
+        toggle: { label: 'tOGGLE cASE', convert: toggleCase },
+        alternating: { label: 'aLtErNaTiNg cAsE', convert: alternatingCase },
+        camel: {
+            label: 'camelCase',
+            convert: text => lowerWords(text)
+                .map((word, i) => i === 0 ? word : capitalizeWord(word))
+                .join('')
+        },
+        snake: { label: 'snake_case', convert: text => lowerWords(text).join('_') },
+        kebab: { label: 'kebab-case', convert: text => lowerWords(text).join('-') },
+        constant: {
+            label: 'CONSTANT_CASE',
+            convert: text => lowerWords(text).map(word => word.toUpperCase()).join('_')
+        }
+    };
+
+    function updateCase() {
+        const text = caseInput.value;
+        caseInputCount.textContent = `Input: ${text.length} chars`;
+
+        if (caseCopyBtn.classList.contains('copied')) {
+            setBtn(caseCopyBtn, 'copy', 'Copy');
+            caseCopyBtn.classList.remove('copied');
+        }
+
+        if (!text) {
+            caseOutput.value = '';
+            caseOutputCount.textContent = 'Output: 0 chars';
+            return;
+        }
+
+        const converted = caseConverters[caseMode].convert(text);
+        caseOutput.value = converted;
+        caseOutputCount.textContent = `Output: ${converted.length} chars`;
+    }
+
+    caseModeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            caseModeBtns.forEach(b => {
+                const active = b === btn;
+                b.classList.toggle('active', active);
+                b.setAttribute('aria-pressed', String(active));
+            });
+            caseMode = btn.dataset.case;
+            caseResultLabel.textContent = caseConverters[caseMode].label + ' Output:';
+            updateCase();
+        });
+    });
+
+    caseInput.addEventListener('input', updateCase);
+
+    caseClearBtn.addEventListener('click', () => {
+        caseInput.value = '';
+        updateCase();
+        caseInput.focus();
+    });
+
+    caseCopyBtn.addEventListener('click', async () => {
+        if (!caseOutput.value) return;
+        try {
+            await navigator.clipboard.writeText(caseOutput.value);
+            setBtn(caseCopyBtn, 'check', 'Copied!');
+            caseCopyBtn.classList.add('copied');
+            setTimeout(() => {
+                setBtn(caseCopyBtn, 'copy', 'Copy');
+                caseCopyBtn.classList.remove('copied');
+            }, 2000);
+        } catch (error) {
+            console.error('Failed to copy:', error);
+        }
+    });
+
+    updateCase();
 })();
 
 // Image <-> Base64 Tool (file encode, realtime decode, magic-byte sniffing)
