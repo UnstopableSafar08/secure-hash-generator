@@ -6,6 +6,7 @@ const resultValue = document.getElementById('resultValue');
 const copyBtn = document.getElementById('copyBtn');
 const algorithmBtns = document.querySelectorAll('.algorithm-btn');
 const navBtns = document.querySelectorAll('.nav-btn');
+const navGroups = document.querySelectorAll('.nav-group');
 const toolPanels = document.querySelectorAll('.tab-content');
 const toolTitle = document.getElementById('toolTitle');
 const toolDesc = document.getElementById('toolDesc');
@@ -72,6 +73,20 @@ function revealActiveTool() {
     }
 }
 
+function setGroupExpanded(group, expanded) {
+    group.classList.toggle('is-collapsed', !expanded);
+    const toggle = group.querySelector('.nav-group-toggle');
+    if (toggle) toggle.setAttribute('aria-expanded', String(expanded));
+}
+
+navGroups.forEach(group => {
+    const toggle = group.querySelector('.nav-group-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', () => {
+        setGroupExpanded(group, group.classList.contains('is-collapsed'));
+    });
+});
+
 function renderRoute() {
     const id = currentToolFromHash();
     navBtns.forEach(b => {
@@ -79,6 +94,11 @@ function renderRoute() {
         b.classList.toggle('active', active);
         if (active) b.setAttribute('aria-current', 'page');
         else b.removeAttribute('aria-current');
+    });
+    navGroups.forEach(group => {
+        const hasActive = Boolean(group.querySelector('.nav-btn.active'));
+        group.classList.toggle('has-active', hasActive);
+        if (hasActive) setGroupExpanded(group, true);
     });
     toolPanels.forEach(panel => {
         panel.classList.toggle('active', panel.id === id + 'Tab');
@@ -105,9 +125,21 @@ window.addEventListener('hashchange', renderRoute);
 if (toolSearch) {
     toolSearch.addEventListener('input', () => {
         const q = toolSearch.value.trim().toLowerCase();
-        navBtns.forEach(b => {
-            const hit = (b.dataset.tool + ' ' + b.textContent).toLowerCase().includes(q);
-            b.style.display = hit ? '' : 'none';
+        navGroups.forEach(group => {
+            const label = group.querySelector('.nav-group-label');
+            const groupText = label ? label.textContent.toLowerCase() : '';
+            const groupHit = Boolean(q) && groupText.includes(q);
+            let hasMatch = false;
+
+            group.querySelectorAll('.nav-btn').forEach(b => {
+                const hit = !q || groupHit ||
+                    (b.dataset.tool + ' ' + b.textContent).toLowerCase().includes(q);
+                b.style.display = hit ? '' : 'none';
+                if (hit) hasMatch = true;
+            });
+
+            group.hidden = !hasMatch;
+            setGroupExpanded(group, q ? hasMatch : true);
         });
     });
 }

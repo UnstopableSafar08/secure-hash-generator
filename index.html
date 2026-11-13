@@ -18,7 +18,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css?v=17">
+    <link rel="stylesheet" href="assets/css/styles.css?v=18">
     <script src="assets/js/lucide.min.js?v=1.58.0"></script>
 </head>
 
@@ -40,50 +40,89 @@
             </div>
 
             <nav class="tool-nav" aria-label="Tool list">
-                <button class="nav-btn active" data-tool="hash" aria-current="page">
-                    <i data-lucide="hash"></i>
-                    <span class="nav-text"><span class="nav-label">Hash Generator</span><span class="nav-desc">SHA-256, SHA-512, SHA-1, MD5</span></span>
-                </button>
-                <button class="nav-btn" data-tool="password">
-                    <i data-lucide="key-round"></i>
-                    <span class="nav-text"><span class="nav-label">Password Generator</span><span class="nav-desc">Secure random passwords</span></span>
-                </button>
-                <button class="nav-btn" data-tool="random">
-                    <i data-lucide="dices"></i>
-                    <span class="nav-text"><span class="nav-label">Random Strings</span><span class="nav-desc">Keys, tokens &amp; IDs in bulk</span></span>
-                </button>
-                <button class="nav-btn" data-tool="bcrypt">
-                    <i data-lucide="fingerprint"></i>
-                    <span class="nav-text"><span class="nav-label">Bcrypt</span><span class="nav-desc">Hash &amp; verify passwords</span></span>
-                </button>
-                <button class="nav-btn" data-tool="base64">
-                    <i data-lucide="binary"></i>
-                    <span class="nav-text"><span class="nav-label">Base64 Tool</span><span class="nav-desc">Realtime encode &amp; decode</span></span>
-                </button>
-                <button class="nav-btn" data-tool="charCount">
-                    <i data-lucide="case-sensitive"></i>
-                    <span class="nav-text"><span class="nav-label">Char Count</span><span class="nav-desc">Chars, words, frequency</span></span>
-                </button>
-                <button class="nav-btn" data-tool="case">
-                    <i data-lucide="case-upper"></i>
-                    <span class="nav-text"><span class="nav-label">Convert Case</span><span class="nav-desc">Upper, lower &amp; title case</span></span>
-                </button>
-                <button class="nav-btn" data-tool="image">
-                    <i data-lucide="image"></i>
-                    <span class="nav-text"><span class="nav-label">Image Base64</span><span class="nav-desc">Images to Base64 &amp; back</span></span>
-                </button>
-                <button class="nav-btn" data-tool="resize">
-                    <i data-lucide="image-upscale"></i>
-                    <span class="nav-text"><span class="nav-label">Image Resizer</span><span class="nav-desc">Resize &amp; convert images</span></span>
-                </button>
-                <button class="nav-btn" data-tool="pdfToImages">
-                    <i data-lucide="file-image"></i>
-                    <span class="nav-text"><span class="nav-label">PDF to Images</span><span class="nav-desc">Pages to JPG, PNG &amp; WebP</span></span>
-                </button>
-                <button class="nav-btn" data-tool="imagesToPdf">
-                    <i data-lucide="file-text"></i>
-                    <span class="nav-text"><span class="nav-label">Images to PDF</span><span class="nav-desc">Combine images into a PDF</span></span>
-                </button>
+                <div class="nav-group has-active" data-group="security">
+                    <button type="button" class="nav-group-toggle" aria-expanded="true" aria-controls="navGroupSecurity">
+                        <i data-lucide="shield"></i>
+                        <span class="nav-group-label">Security</span>
+                        <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+                    </button>
+                    <div class="nav-group-items" id="navGroupSecurity">
+                        <button class="nav-btn active" data-tool="hash" aria-current="page">
+                            <i data-lucide="hash"></i>
+                            <span class="nav-text"><span class="nav-label">Hash Generator</span><span class="nav-desc">SHA-256, SHA-512, SHA-1, MD5</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="password">
+                            <i data-lucide="key-round"></i>
+                            <span class="nav-text"><span class="nav-label">Password Generator</span><span class="nav-desc">Secure random passwords</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="random">
+                            <i data-lucide="dices"></i>
+                            <span class="nav-text"><span class="nav-label">Random Strings</span><span class="nav-desc">Keys, tokens &amp; IDs in bulk</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="bcrypt">
+                            <i data-lucide="fingerprint"></i>
+                            <span class="nav-text"><span class="nav-label">Bcrypt</span><span class="nav-desc">Hash &amp; verify passwords</span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="nav-group" data-group="text">
+                    <button type="button" class="nav-group-toggle" aria-expanded="true" aria-controls="navGroupText">
+                        <i data-lucide="type"></i>
+                        <span class="nav-group-label">Text</span>
+                        <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+                    </button>
+                    <div class="nav-group-items" id="navGroupText">
+                        <button class="nav-btn" data-tool="base64">
+                            <i data-lucide="binary"></i>
+                            <span class="nav-text"><span class="nav-label">Base64 Tool</span><span class="nav-desc">Realtime encode &amp; decode</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="charCount">
+                            <i data-lucide="case-sensitive"></i>
+                            <span class="nav-text"><span class="nav-label">Char Count</span><span class="nav-desc">Chars, words, frequency</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="case">
+                            <i data-lucide="case-upper"></i>
+                            <span class="nav-text"><span class="nav-label">Convert Case</span><span class="nav-desc">Upper, lower &amp; title case</span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="nav-group" data-group="images">
+                    <button type="button" class="nav-group-toggle" aria-expanded="true" aria-controls="navGroupImages">
+                        <i data-lucide="images"></i>
+                        <span class="nav-group-label">Images</span>
+                        <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+                    </button>
+                    <div class="nav-group-items" id="navGroupImages">
+                        <button class="nav-btn" data-tool="image">
+                            <i data-lucide="image"></i>
+                            <span class="nav-text"><span class="nav-label">Image Base64</span><span class="nav-desc">Images to Base64 &amp; back</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="resize">
+                            <i data-lucide="image-upscale"></i>
+                            <span class="nav-text"><span class="nav-label">Image Resizer</span><span class="nav-desc">Resize &amp; convert images</span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="nav-group" data-group="pdf">
+                    <button type="button" class="nav-group-toggle" aria-expanded="true" aria-controls="navGroupPdf">
+                        <i data-lucide="file-text"></i>
+                        <span class="nav-group-label">PDF</span>
+                        <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+                    </button>
+                    <div class="nav-group-items" id="navGroupPdf">
+                        <button class="nav-btn" data-tool="pdfToImages">
+                            <i data-lucide="file-image"></i>
+                            <span class="nav-text"><span class="nav-label">PDF to Images</span><span class="nav-desc">Pages to JPG, PNG &amp; WebP</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="imagesToPdf">
+                            <i data-lucide="file-text"></i>
+                            <span class="nav-text"><span class="nav-label">Images to PDF</span><span class="nav-desc">Combine images into a PDF</span></span>
+                        </button>
+                    </div>
+                </div>
             </nav>
 
             <div class="sidebar-footer">
@@ -920,7 +959,7 @@
         })();
     </script>
     <script src="assets/js/image-preview.js?v=1"></script>
-    <script src="assets/js/script.js?v=17"></script>
+    <script src="assets/js/script.js?v=18"></script>
     <script src="assets/js/pdf-tool.js?v=18"></script>
 </body>
 

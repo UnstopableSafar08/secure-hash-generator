@@ -186,7 +186,86 @@ body::before {
 .tool-nav {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 14px;
+}
+
+.nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav-group[hidden] {
+    display: none;
+}
+
+.nav-group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+}
+
+.nav-group-toggle:hover {
+    background: var(--glass);
+    color: var(--text-primary);
+}
+
+.nav-group-toggle:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+
+.nav-group-toggle > .lucide {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.nav-group-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.nav-group-toggle > .nav-group-chevron {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-group.is-collapsed .nav-group-chevron {
+    transform: rotate(-90deg);
+}
+
+.nav-group.has-active > .nav-group-toggle {
+    color: var(--text-primary);
+}
+
+.nav-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-left: 10px;
+    padding-left: 10px;
+    border-left: 1px solid var(--border);
+}
+
+.nav-group.is-collapsed .nav-group-items {
+    display: none;
 }
 
 .nav-btn {

@@ -1,12 +1,12 @@
 /* Secure Tools offline support: cache-first app shell, same-origin GET only. */
-const CACHE = 'secure-tools-v11';
+const CACHE = 'secure-tools-v12';
 const CORE = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './assets/css/styles.css?v=17',
+  './assets/css/styles.css?v=18',
   './assets/js/image-preview.js?v=1',
-  './assets/js/script.js?v=17',
+  './assets/js/script.js?v=18',
   './assets/js/pdf-tool.js?v=18',
   './assets/js/lucide.min.js?v=1.58.0',
   './assets/vendor/pdfjs/pdf.min.js',
