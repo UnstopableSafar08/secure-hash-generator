@@ -123,6 +123,15 @@
         }, 10000);
     }
 
+    // Shared lightbox (assets/js/image-preview.js) powers every image preview.
+    function closePreview() {
+        if (window.ImagePreview) window.ImagePreview.close();
+    }
+
+    function openPreview(options) {
+        if (window.ImagePreview) window.ImagePreview.open(options);
+    }
+
     function canvasToBlob(canvas, mime, quality) {
         return new Promise(function (resolve, reject) {
             try {
@@ -582,6 +591,7 @@
                 '<div class="pdf-result-thumb">' +
                     (result.thumb ? '<img src="' + result.thumb + '" alt="">' : '<i data-lucide="file-image"></i>') +
                     '<span class="pdf-result-badge">' + escapeHtml(kind) + '</span>' +
+                    '<button type="button" class="image-preview-trigger" data-result-action="preview" aria-label="Preview ' + escapeHtml(result.name) + '" title="Preview image"><i data-lucide="zoom-in"></i></button>' +
                 '</div>' +
                 '<div class="pdf-result-body">' +
                     '<div class="pdf-result-name" title="' + escapeHtml(result.name) + '">' + escapeHtml(result.name) + '</div>' +
@@ -619,6 +629,7 @@
         }
 
         function clearResults() {
+            closePreview();
             state.results = [];
             resultsEl.innerHTML = '';
             updateResultsUi();
@@ -1426,13 +1437,30 @@
         });
 
         resultsEl.addEventListener('click', function (event) {
-            const button = event.target.closest('[data-result-action="download"]');
-            if (!button) return;
-            const card = button.closest('[data-result-id]');
+            const action = event.target.closest('[data-result-action]');
+            if (!action) return;
+            const card = action.closest('[data-result-id]');
             if (!card) return;
             const index = Number(card.dataset.resultId);
             const result = state.results[index];
-            if (result) downloadBlob(result.blob, result.name);
+            if (!result) return;
+
+            if (action.dataset.resultAction === 'download') {
+                downloadBlob(result.blob, result.name);
+            } else if (action.dataset.resultAction === 'preview') {
+                openPreview({
+                    name: result.name,
+                    meta: (result.kind === 'page' ? 'Page ' + result.page : 'Embedded image') + ' · ' +
+                        result.width.toLocaleString() + ' × ' + result.height.toLocaleString() + ' px · ' +
+                        formatBytes(result.blob.size),
+                    blob: result.blob,
+                    width: result.width,
+                    height: result.height,
+                    onDownload: function () {
+                        downloadBlob(result.blob, result.name);
+                    }
+                });
+            }
         });
 
         downloadAllBtn.addEventListener('click', downloadAllResults);
@@ -1557,6 +1585,7 @@
                     (item.previewUrl
                         ? '<img src="' + escapeHtml(item.previewUrl) + '" alt="' + escapeHtml(item.name) + ' preview" style="transform: rotate(' + rotation + 'deg) scale(' + scale + ')">'
                         : '<i data-lucide="image"></i>') +
+                    '<button type="button" class="image-preview-trigger" data-image-action="preview" aria-label="Preview ' + escapeHtml(item.name) + '" title="Preview image"><i data-lucide="zoom-in"></i></button>' +
                     '<span class="resize-card-format">' + escapeHtml(mimeLabel(item.mime)) + '</span>' +
                     '<span class="pdf-order-badge">' + (index + 1) + '</span>' +
                     '<button type="button" class="resize-card-remove" data-image-action="remove" aria-label="Remove ' + escapeHtml(item.name) + '"><i data-lucide="x"></i></button>' +
@@ -1756,6 +1785,7 @@
 
         function removeItem(id) {
             if (state.isExporting) return;
+            closePreview();
             const index = state.items.findIndex(function (item) { return item.id === id; });
             if (index === -1) return;
             const item = state.items[index];
@@ -1805,6 +1835,7 @@
         function clearAll() {
             if (state.isExporting) return;
             if (!state.items.length && !state.output) return;
+            closePreview();
             state.items.forEach(function (item) {
                 URL.revokeObjectURL(item.previewUrl);
             });
@@ -2141,6 +2172,28 @@
             else if (action === 'up') moveItem(id, -1);
             else if (action === 'down') moveItem(id, 1);
             else if (action === 'rotate') rotateItem(id);
+            else if (action === 'preview') {
+                const item = state.items.find(function (entry) { return entry.id === id; });
+                if (!item || !item.previewUrl) return;
+                const rotation = item.rotation || 0;
+                const parts = [];
+                if (item.width && item.height) {
+                    parts.push(item.width.toLocaleString() + ' × ' + item.height.toLocaleString() + ' px');
+                }
+                parts.push(formatBytes(item.size));
+                if (rotation) parts.push('Rotated ' + rotation + '°');
+                openPreview({
+                    name: item.name,
+                    meta: parts.join(' · '),
+                    src: item.previewUrl,
+                    width: item.width,
+                    height: item.height,
+                    rotation: rotation,
+                    onDownload: function () {
+                        downloadBlob(item.file, item.name);
+                    }
+                });
+            }
         });
 
         grid.addEventListener('dragstart', function (event) {
@@ -2197,6 +2250,8 @@
         renderGrid();
         updateUi();
     }
+
+    window.addEventListener('hashchange', closePreview);
 
     initPdfToImages();
     initImagesToPdf();

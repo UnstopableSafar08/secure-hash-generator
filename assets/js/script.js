@@ -1219,6 +1219,7 @@ copyAllStringsBtn.addEventListener('click', async () => {
     const encodeError = document.getElementById('imageEncodeError');
     const encodeResult = document.getElementById('imageEncodeResult');
     const encodePreview = document.getElementById('imageEncodePreview');
+    const encodePreviewBtn = document.getElementById('imageEncodePreviewBtn');
     const encodeInfo = document.getElementById('imageEncodeInfo');
     const encodeOutput = document.getElementById('imageEncodeOutput');
     const encodeOutputLabel = document.getElementById('imageEncodeOutputLabel');
@@ -1230,12 +1231,18 @@ copyAllStringsBtn.addEventListener('click', async () => {
     const decodeError = document.getElementById('imageDecodeError');
     const decodeResult = document.getElementById('imageDecodeResult');
     const decodePreview = document.getElementById('imageDecodePreview');
+    const decodePreviewBtn = document.getElementById('imageDecodePreviewBtn');
     const decodeInfo = document.getElementById('imageDecodeInfo');
     const decodeDownloadBtn = document.getElementById('imageDecodeDownloadBtn');
     const decodeClearBtn = document.getElementById('imageDecodeClearBtn');
 
     let currentDataUrl = '';
     let currentBaseName = 'image';
+    let currentFileName = 'image';
+    let currentFileSize = 0;
+    let currentFileType = '';
+    let currentDecodeDataUrl = '';
+    let currentDecodeMeta = '';
 
     function formatBytes(n) {
         if (n < 1024) return n + ' B';
@@ -1315,6 +1322,9 @@ copyAllStringsBtn.addEventListener('click', async () => {
             return;
         }
         currentBaseName = (file.name || 'image').replace(/\.[^.]+$/, '') || 'image';
+        currentFileName = file.name || 'image';
+        currentFileSize = file.size;
+        currentFileType = file.type || '';
         const reader = new FileReader();
         reader.onload = () => {
             currentDataUrl = reader.result;
@@ -1374,6 +1384,28 @@ copyAllStringsBtn.addEventListener('click', async () => {
 
     dataUrlCheckbox.addEventListener('change', renderEncodeOutput);
 
+    encodePreviewBtn.addEventListener('click', () => {
+        if (!currentDataUrl) return;
+        const dataUrl = currentDataUrl;
+        const fileName = currentFileName;
+        const dims = encodePreview.naturalWidth && encodePreview.naturalHeight
+            ? encodePreview.naturalWidth.toLocaleString() + ' × ' + encodePreview.naturalHeight.toLocaleString() + ' px'
+            : '';
+        window.ImagePreview.open({
+            src: dataUrl,
+            name: fileName,
+            meta: [currentFileType, dims, currentFileSize ? formatBytes(currentFileSize) : ''].filter(Boolean).join(' · '),
+            onDownload: () => {
+                const anchor = document.createElement('a');
+                anchor.href = dataUrl;
+                anchor.download = fileName || 'image';
+                document.body.appendChild(anchor);
+                anchor.click();
+                anchor.remove();
+            }
+        });
+    });
+
     encodeCopyBtn.addEventListener('click', async () => {
         if (!encodeOutput.value) return;
         try {
@@ -1400,6 +1432,9 @@ copyAllStringsBtn.addEventListener('click', async () => {
 
     encodeClearBtn.addEventListener('click', () => {
         currentDataUrl = '';
+        currentFileName = 'image';
+        currentFileSize = 0;
+        currentFileType = '';
         encodeOutput.value = '';
         encodeResult.style.display = 'none';
         encodeError.textContent = '';
@@ -1410,6 +1445,8 @@ copyAllStringsBtn.addEventListener('click', async () => {
         const rawInput = decodeInput.value.trim();
         decodeError.textContent = '';
         decodeResult.style.display = 'none';
+        currentDecodeDataUrl = '';
+        currentDecodeMeta = '';
         if (!rawInput) return;
 
         let mime = '';
@@ -1456,6 +1493,8 @@ copyAllStringsBtn.addEventListener('click', async () => {
 
         const dataUrl = 'data:' + mime + ';base64,' + b64;
         loadPreview(decodePreview, dataUrl, (w, h) => {
+            currentDecodeDataUrl = dataUrl;
+            currentDecodeMeta = [mime, formatBytes(bytes.length), w.toLocaleString() + ' × ' + h.toLocaleString() + ' px'].join(' · ');
             decodeInfo.innerHTML = infoRow('Detected type', mime) +
                 infoRow('Decoded size', formatBytes(bytes.length)) +
                 infoRow('Dimensions', w.toLocaleString() + ' × ' + h.toLocaleString() + ' px');
@@ -1468,6 +1507,16 @@ copyAllStringsBtn.addEventListener('click', async () => {
     }
 
     decodeInput.addEventListener('input', updateDecode);
+
+    decodePreviewBtn.addEventListener('click', () => {
+        if (!currentDecodeDataUrl) return;
+        window.ImagePreview.open({
+            src: currentDecodeDataUrl,
+            name: 'Decoded image',
+            meta: currentDecodeMeta,
+            onDownload: () => decodeDownloadBtn.click()
+        });
+    });
 
     decodeClearBtn.addEventListener('click', () => {
         decodeInput.value = '';
@@ -1783,7 +1832,8 @@ copyAllStringsBtn.addEventListener('click', async () => {
         return '<article class="resize-card" data-id="' + item.id + '" role="listitem">' +
             '<div class="resize-card-preview">' +
                 (thumbUrl
-                    ? '<img src="' + escapeHtml(thumbUrl) + '" alt="' + escapeHtml(item.name) + ' preview">'
+                    ? '<img src="' + escapeHtml(thumbUrl) + '" alt="' + escapeHtml(item.name) + ' preview">' +
+                        '<button type="button" class="image-preview-trigger" data-action="preview" aria-label="Preview ' + escapeHtml(item.name) + '" title="Preview image"><i data-lucide="zoom-in"></i></button>'
                     : '<i data-lucide="image"></i>') +
                 '<span class="resize-card-format" data-role="format">' + escapeHtml(format) + '</span>' +
                 '<button type="button" class="resize-card-remove" data-action="remove" aria-label="Remove ' + escapeHtml(item.name) + '"><i data-lucide="x"></i></button>' +
@@ -2793,6 +2843,42 @@ copyAllStringsBtn.addEventListener('click', async () => {
     });
 
     grid.addEventListener('click', event => {
+        const previewButton = event.target.closest('[data-action="preview"]');
+        if (previewButton) {
+            const card = previewButton.closest('.resize-card');
+            if (!card) return;
+            const item = items.find(entry => entry.id === card.dataset.id);
+            if (!item) return;
+
+            const useOutput = Boolean(item.outputUrl && item.outputBlob);
+            const dims = useOutput && item.outputWidth && item.outputHeight
+                ? item.outputWidth.toLocaleString() + ' × ' + item.outputHeight.toLocaleString() + ' px'
+                : (item.width && item.height
+                    ? item.width.toLocaleString() + ' × ' + item.height.toLocaleString() + ' px'
+                    : '');
+            const bytes = useOutput ? item.outputBlob.size : item.size;
+            window.ImagePreview.open({
+                src: useOutput ? item.outputUrl : item.sourceUrl,
+                name: item.name,
+                meta: [useOutput ? 'Resized output' : 'Original', dims, formatBytes(bytes)].filter(Boolean).join(' · '),
+                width: useOutput ? item.outputWidth : item.width,
+                height: useOutput ? item.outputHeight : item.height,
+                onDownload: () => {
+                    if (useOutput) {
+                        downloadBlob(item.outputBlob, buildOutputName(item));
+                        return;
+                    }
+                    const anchor = document.createElement('a');
+                    anchor.href = item.sourceUrl;
+                    anchor.download = item.name;
+                    document.body.appendChild(anchor);
+                    anchor.click();
+                    anchor.remove();
+                }
+            });
+            return;
+        }
+
         const removeButton = event.target.closest('[data-action="remove"]');
         if (removeButton) {
             const card = removeButton.closest('.resize-card');
