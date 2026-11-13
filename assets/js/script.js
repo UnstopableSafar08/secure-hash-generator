@@ -96,9 +96,7 @@ function renderRoute() {
         else b.removeAttribute('aria-current');
     });
     navGroups.forEach(group => {
-        const hasActive = Boolean(group.querySelector('.nav-btn.active'));
-        group.classList.toggle('has-active', hasActive);
-        if (hasActive) setGroupExpanded(group, true);
+        group.classList.toggle('has-active', Boolean(group.querySelector('.nav-btn.active')));
     });
     toolPanels.forEach(panel => {
         panel.classList.toggle('active', panel.id === id + 'Tab');
@@ -122,9 +120,19 @@ navBtns.forEach(btn => {
 
 window.addEventListener('hashchange', renderRoute);
 
+let searchGroupState = null;
+
 if (toolSearch) {
     toolSearch.addEventListener('input', () => {
         const q = toolSearch.value.trim().toLowerCase();
+
+        if (q && !searchGroupState) {
+            searchGroupState = new Map();
+            navGroups.forEach(group => {
+                searchGroupState.set(group, !group.classList.contains('is-collapsed'));
+            });
+        }
+
         navGroups.forEach(group => {
             const label = group.querySelector('.nav-group-label');
             const groupText = label ? label.textContent.toLowerCase() : '';
@@ -139,8 +147,15 @@ if (toolSearch) {
             });
 
             group.hidden = !hasMatch;
-            setGroupExpanded(group, q ? hasMatch : true);
+
+            if (q) {
+                setGroupExpanded(group, hasMatch);
+            } else if (searchGroupState) {
+                setGroupExpanded(group, searchGroupState.get(group));
+            }
         });
+
+        if (!q) searchGroupState = null;
     });
 }
 
