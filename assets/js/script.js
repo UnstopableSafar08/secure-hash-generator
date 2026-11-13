@@ -83,7 +83,12 @@ navGroups.forEach(group => {
     const toggle = group.querySelector('.nav-group-toggle');
     if (!toggle) return;
     toggle.addEventListener('click', () => {
-        setGroupExpanded(group, group.classList.contains('is-collapsed'));
+        // Accordion behavior: opening a category closes every other category.
+        if (!group.classList.contains('is-collapsed')) {
+            setGroupExpanded(group, false);
+            return;
+        }
+        navGroups.forEach(other => setGroupExpanded(other, other === group));
     });
 });
 
@@ -104,8 +109,18 @@ function renderRoute() {
     if (toolTitle) toolTitle.textContent = TOOLS[id].title;
     if (toolDesc) toolDesc.textContent = TOOLS[id].desc;
     document.title = TOOLS[id].title + ' · Secure Tools';
-    if (firstRender) firstRender = false;
-    else revealActiveTool();
+
+    if (firstRender) {
+        firstRender = false;
+    } else {
+        // Keep the active category open and close the rest, so only one
+        // category ever shows its tools.
+        const activeGroup = [...navGroups].find(group => group.classList.contains('has-active'));
+        if (activeGroup) {
+            navGroups.forEach(group => setGroupExpanded(group, group === activeGroup));
+        }
+        revealActiveTool();
+    }
 }
 
 let firstRender = true;
@@ -133,6 +148,10 @@ if (toolSearch) {
             });
         }
 
+        const currentOpen = [...navGroups].find(group => !group.classList.contains('is-collapsed'));
+        let firstMatch = null;
+        let openMatch = null;
+
         navGroups.forEach(group => {
             const label = group.querySelector('.nav-group-label');
             const groupText = label ? label.textContent.toLowerCase() : '';
@@ -148,14 +167,21 @@ if (toolSearch) {
 
             group.hidden = !hasMatch;
 
-            if (q) {
-                setGroupExpanded(group, hasMatch);
-            } else if (searchGroupState) {
-                setGroupExpanded(group, searchGroupState.get(group));
+            if (q && hasMatch) {
+                if (!firstMatch) firstMatch = group;
+                if (group === currentOpen) openMatch = group;
             }
         });
 
-        if (!q) searchGroupState = null;
+        if (q) {
+            // Only one matching category is expanded at a time.
+            const groupToOpen = openMatch || firstMatch;
+            navGroups.forEach(group => setGroupExpanded(group, group === groupToOpen));
+        } else if (searchGroupState) {
+            const groupToRestore = [...navGroups].find(group => searchGroupState.get(group));
+            navGroups.forEach(group => setGroupExpanded(group, group === groupToRestore));
+            searchGroupState = null;
+        }
     });
 }
 
