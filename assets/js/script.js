@@ -83,12 +83,19 @@ navGroups.forEach(group => {
     const toggle = group.querySelector('.nav-group-toggle');
     if (!toggle) return;
     toggle.addEventListener('click', () => {
-        // Accordion behavior: opening a category closes every other category.
         if (!group.classList.contains('is-collapsed')) {
             setGroupExpanded(group, false);
             return;
         }
+
+        // Accordion behavior: opening a category closes every other category.
         navGroups.forEach(other => setGroupExpanded(other, other === group));
+
+        // Selecting a category also selects its first visible tool, so the
+        // active label and the highlighted tool stay in sync.
+        const firstTool = [...group.querySelectorAll('.nav-btn')]
+            .find(btn => btn.style.display !== 'none');
+        if (firstTool) firstTool.click();
     });
 });
 
