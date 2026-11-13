@@ -18,7 +18,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css?v=13">
+    <link rel="stylesheet" href="assets/css/styles.css?v=14">
     <script src="assets/js/lucide.min.js?v=1.58.0"></script>
 </head>
 
@@ -519,87 +519,163 @@
         </div>
 
         <div class="tab-content" id="resizeTab">
-            <div class="dropzone" id="resizeDropzone" role="button" tabindex="0" aria-label="Select an image to resize">
-                <i data-lucide="image-upscale"></i>
-                <div class="dropzone-text"><strong>Drop an image here</strong> or click to browse</div>
-                <div class="dropzone-hint">PNG, JPEG, WebP, GIF, BMP or SVG — resized locally on your device</div>
-                <input type="file" id="resizeFileInput" accept="image/*" hidden>
+            <div class="resize-app" id="resizeApp">
+                <aside class="resize-sidebar" aria-label="Resize and export settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="resizeAddBtn"><i data-lucide="image-plus"></i> Add Images</button>
+                        <button type="button" class="resize-clear-all-btn" id="resizeClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear All</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="resizeDropzone" role="button" tabindex="0" aria-label="Add images to resize">
+                        <i data-lucide="image-plus"></i>
+                        <div class="resize-dropzone-text"><strong>Drop images here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">JPG, PNG, WebP, GIF, BMP, SVG or AVIF</div>
+                        <div class="resize-dropzone-limit">Max 10 MB per image</div>
+                        <input type="file" id="resizeFileInput" accept="image/*" multiple hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="settings-2"></i> Resize Settings</h3>
+                        <div class="resize-mode-tabs" role="tablist" aria-label="Resize mode">
+                            <button type="button" class="resize-mode-tab active" data-mode="size" role="tab" aria-selected="true" aria-controls="resizeSizePanel" id="resizeSizeTab">By Size</button>
+                            <button type="button" class="resize-mode-tab" data-mode="percentage" role="tab" aria-selected="false" aria-controls="resizePercentagePanel" id="resizePercentageTab">As Percentage</button>
+                            <button type="button" class="resize-mode-tab" data-mode="social" role="tab" aria-selected="false" aria-controls="resizeSocialPanel" id="resizeSocialTab">Social Media</button>
+                        </div>
+
+                        <div class="resize-mode-panel" data-panel="size" id="resizeSizePanel" role="tabpanel" aria-labelledby="resizeSizeTab">
+                            <div class="resize-dimension-row">
+                                <div class="resize-dimension-field">
+                                    <label for="resizeWidth">Width</label>
+                                    <div class="resize-dimension-input">
+                                        <input type="number" id="resizeWidth" min="1" max="10000" step="1" inputmode="numeric" placeholder="Auto">
+                                        <span>px</span>
+                                    </div>
+                                </div>
+                                <div class="resize-dimension-field">
+                                    <label for="resizeHeight">Height</label>
+                                    <div class="resize-dimension-input">
+                                        <input type="number" id="resizeHeight" min="1" max="10000" step="1" inputmode="numeric" placeholder="Auto">
+                                        <span>px</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <label class="resize-check-row" for="resizeLockAspect">
+                                <input type="checkbox" id="resizeLockAspect" checked>
+                                <span>Lock Aspect Ratio</span>
+                            </label>
+                            <p class="resize-field-hint" id="resizeSizeHint">Leave both fields blank to keep each image's original size.</p>
+                        </div>
+
+                        <div class="resize-mode-panel" data-panel="percentage" id="resizePercentagePanel" role="tabpanel" aria-labelledby="resizePercentageTab" hidden>
+                            <div class="resize-percentage-head">
+                                <label for="resizePercentage">Scale</label>
+                                <span class="resize-percentage-value" id="resizePercentageValue">100%</span>
+                            </div>
+                            <input type="range" class="length-slider" id="resizePercentage" min="5" max="200" step="5" value="100">
+                            <div class="resize-percentage-presets" role="group" aria-label="Percentage presets">
+                                <button type="button" class="resize-percentage-btn" data-percentage="25">25%</button>
+                                <button type="button" class="resize-percentage-btn" data-percentage="50">50%</button>
+                                <button type="button" class="resize-percentage-btn" data-percentage="75">75%</button>
+                                <button type="button" class="resize-percentage-btn active" data-percentage="100">100%</button>
+                            </div>
+                        </div>
+
+                        <div class="resize-mode-panel" data-panel="social" id="resizeSocialPanel" role="tabpanel" aria-labelledby="resizeSocialTab" hidden>
+                            <div class="resize-export-field">
+                                <label for="resizeSocialPreset">Preset</label>
+                                <select class="resize-field" id="resizeSocialPreset">
+                                    <optgroup label="Instagram">
+                                        <option value="1080x1080">Square post — 1080 × 1080</option>
+                                        <option value="1080x1350">Portrait post — 1080 × 1350</option>
+                                        <option value="1080x566">Landscape post — 1080 × 566</option>
+                                        <option value="1080x1920">Story / Reel — 1080 × 1920</option>
+                                    </optgroup>
+                                    <optgroup label="Facebook">
+                                        <option value="1200x630">Post — 1200 × 630</option>
+                                        <option value="1080x1920">Story — 1080 × 1920</option>
+                                        <option value="851x315">Cover — 851 × 315</option>
+                                    </optgroup>
+                                    <optgroup label="X (Twitter)">
+                                        <option value="1600x900">Post — 1600 × 900</option>
+                                        <option value="1500x500">Header — 1500 × 500</option>
+                                    </optgroup>
+                                    <optgroup label="YouTube">
+                                        <option value="1280x720">Thumbnail — 1280 × 720</option>
+                                        <option value="2560x1440">Banner — 2560 × 1440</option>
+                                    </optgroup>
+                                    <optgroup label="LinkedIn">
+                                        <option value="1200x627">Post — 1200 × 627</option>
+                                        <option value="1584x396">Banner — 1584 × 396</option>
+                                    </optgroup>
+                                    <optgroup label="Other">
+                                        <option value="1080x1920">TikTok video — 1080 × 1920</option>
+                                        <option value="1000x1500">Pinterest pin — 1000 × 1500</option>
+                                        <option value="1080x1920">WhatsApp status — 1080 × 1920</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="resize-social-preview" id="resizeSocialPreview">1080 × 1080 px · center crop</div>
+                        </div>
+                    </section>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="download"></i> Export Settings</h3>
+                        <div class="resize-export-field">
+                            <div class="resize-export-label">
+                                <label for="resizeTargetSize">Target File Size (KB)</label>
+                                <span class="resize-optional">optional</span>
+                            </div>
+                            <input type="number" class="resize-field" id="resizeTargetSize" min="1" max="51200" step="1" inputmode="numeric" placeholder="e.g. 200">
+                            <p class="resize-field-hint" id="resizeTargetHint">Only applies to JPG output.</p>
+                        </div>
+                        <div class="resize-export-field">
+                            <label for="resizeFormat">Save Image As</label>
+                            <select class="resize-field" id="resizeFormat">
+                                <option value="image/jpeg" selected>JPG</option>
+                                <option value="image/png">PNG</option>
+                                <option value="image/webp">WebP</option>
+                            </select>
+                        </div>
+                        <div class="resize-quality-group" id="resizeQualityGroup">
+                            <div class="resize-quality-head">
+                                <label for="resizeQuality">Quality</label>
+                                <span id="resizeQualityValue">90%</span>
+                            </div>
+                            <input type="range" class="length-slider" id="resizeQuality" min="10" max="100" step="1" value="90">
+                        </div>
+                        <button type="button" class="resize-export-btn" id="resizeExportBtn" disabled><i data-lucide="download"></i> Export</button>
+                        <p class="resize-export-hint" id="resizeExportHint">Add images to enable export.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" id="resizeWorkspace" aria-label="Images to resize">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>Images <span class="resize-count" id="resizeCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="resizeWorkspaceSub">Add images to resize them in bulk.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="resizeTotalSize"></div>
+                    </div>
+
+                    <div class="resize-empty" id="resizeEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="images"></i></div>
+                        <h4>No images yet</h4>
+                        <p>Drop your images here or use Add Images to get started. Everything is processed on your device.</p>
+                        <button type="button" class="resize-empty-btn" id="resizeEmptyAddBtn"><i data-lucide="image-plus"></i> Select Images</button>
+                        <span>Up to 50 images · max 10 MB each</span>
+                    </div>
+                    <div class="resize-grid" id="resizeGrid" role="list"></div>
+                    <div class="resize-status" id="resizeStatus" role="status" aria-live="polite"></div>
+                </section>
             </div>
-            <div class="image-error" id="resizeError" role="alert"></div>
 
-            <div id="resizeEditor" style="display: none;">
-                <div class="resize-preview-grid">
-                    <div class="resize-preview-card">
-                        <div class="resize-preview-label">Original</div>
-                        <div class="image-preview-wrap">
-                            <img id="resizeOriginalPreview" class="image-preview" alt="Original image preview">
-                        </div>
-                        <div class="image-info" id="resizeOriginalInfo"></div>
-                    </div>
-                    <div class="resize-preview-card">
-                        <div class="resize-preview-label">Resized</div>
-                        <div class="image-preview-wrap">
-                            <img id="resizeOutputPreview" class="image-preview" alt="Resized image preview">
-                        </div>
-                        <div class="image-info" id="resizeOutputInfo">
-                            <div class="resize-empty">Choose dimensions to preview</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="resize-controls">
-                    <div class="input-group">
-                        <label for="resizeWidth">Width (px)</label>
-                        <input type="number" class="resize-field" id="resizeWidth" min="1" max="10000" step="1" inputmode="numeric">
-                    </div>
-                    <div class="input-group">
-                        <label for="resizeHeight">Height (px)</label>
-                        <input type="number" class="resize-field" id="resizeHeight" min="1" max="10000" step="1" inputmode="numeric">
-                    </div>
-                </div>
-
-                <div class="resize-toolbar">
-                    <div class="option-group resize-lock-group">
-                        <input type="checkbox" id="resizeLockAspect" checked>
-                        <label for="resizeLockAspect">Maintain aspect ratio</label>
-                    </div>
-                    <div class="resize-presets" role="group" aria-label="Resize presets">
-                        <button type="button" class="resize-preset-btn" data-scale="0.25">25%</button>
-                        <button type="button" class="resize-preset-btn" data-scale="0.5">50%</button>
-                        <button type="button" class="resize-preset-btn" data-scale="0.75">75%</button>
-                        <button type="button" class="resize-preset-btn" data-scale="1">100%</button>
-                    </div>
-                </div>
-
-                <div class="resize-format-grid">
-                    <div class="input-group">
-                        <label for="resizeFormat">Output format</label>
-                        <select class="resize-field" id="resizeFormat">
-                            <option value="original">Keep original</option>
-                            <option value="image/png">PNG</option>
-                            <option value="image/jpeg">JPEG</option>
-                            <option value="image/webp">WebP</option>
-                        </select>
-                    </div>
-                    <div class="input-group resize-quality-group" id="resizeQualityGroup">
-                        <label for="resizeQuality">Quality: <span id="resizeQualityValue">90%</span></label>
-                        <input type="range" class="length-slider resize-quality-slider" id="resizeQuality" min="10" max="100" step="1" value="90">
-                    </div>
-                </div>
-
-                <div class="strings-actions resize-actions">
-                    <button class="generate-strings-btn resize-download-btn" id="resizeDownloadBtn" disabled><i data-lucide="download"></i> Download</button>
-                    <button class="copy-all-strings-btn" id="resizeResetBtn"><i data-lucide="rotate-ccw"></i> Reset</button>
-                    <button class="base64-clear-btn" id="resizeClearBtn"><i data-lucide="trash-2"></i> Clear</button>
-                </div>
-
-                <div class="resize-note" id="resizeNote" role="status" aria-live="polite"></div>
-            </div>
+            <div class="image-error resize-error" id="resizeError" role="alert"></div>
 
             <div class="info">
-                <p><strong>Privacy Note:</strong> Resizing happens entirely in your browser using the HTML canvas API.
-                    Images are never uploaded. Output is re-encoded, so animated GIFs become a still frame and
-                    canvas-unsupported source formats are exported as PNG. Maximum output dimension is 10,000 px.</p>
+                <p><strong>Privacy Note:</strong> Resizing happens entirely in your browser using the HTML canvas API —
+                    images are never uploaded. Add up to 50 images (10 MB each). Output is re-encoded, so animated GIFs
+                    become a still frame and formats the canvas cannot encode are exported as PNG. Social Media presets
+                    center-crop to the exact size. Maximum output dimension is 10,000 px.</p>
             </div>
         </div>
 
@@ -636,7 +712,7 @@
             document.head.appendChild(script);
         })();
     </script>
-    <script src="assets/js/script.js?v=13"></script>
+    <script src="assets/js/script.js?v=14"></script>
 </body>
 
 </html>

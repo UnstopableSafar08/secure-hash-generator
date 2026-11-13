@@ -62,11 +62,14 @@ A modern, secure web application for generating hashes, passwords, random string
 - Decode: paste Base64/data URL for realtime preview with magic-byte format detection (PNG, JPEG, GIF, WebP, BMP, SVG) and one-click image download
 
 ### 📐 Image Resizer
-- Drag & drop or browse an image, with original preview, dimensions, type, and file size
-- Width/height inputs with optional aspect-ratio locking and 25/50/75/100% presets
-- Live resized preview with output dimensions and actual file size
-- Output as the original format, PNG, JPEG, or WebP with quality control for JPEG/WebP
-- Download the resized image with one click
+- Bulk upload up to 50 images at once via drag & drop or the file picker (max 10 MB each)
+- Image cards show a preview, filename, original size, original dimensions, new dimensions, output size, and per-image download
+- Resize modes: **By Size** (with optional aspect-ratio locking), **As Percentage**, and **Social Media**
+- Social presets for Instagram, Facebook, X, YouTube, LinkedIn, TikTok, Pinterest, and WhatsApp with center cropping
+- Export as JPG, PNG, or WebP with quality control
+- Optional JPG target file size in KB, reached automatically with a quality search
+- Single images download directly; multiple images export as a ZIP archive
+- Remove individual images or clear the whole batch
 - All resizing is performed locally with the canvas API — no uploads
 
 ## Security
