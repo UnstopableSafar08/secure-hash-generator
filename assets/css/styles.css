@@ -1495,6 +1495,181 @@ textarea::placeholder {
     display: inline-flex;
 }
 
+/* Image Resizer Tool Styles */
+.resize-preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.resize-preview-card {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.32);
+}
+
+.resize-preview-label {
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.resize-preview-card .image-preview-wrap {
+    margin-bottom: 10px;
+}
+
+.resize-preview-card .image-preview {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+}
+
+.resize-preview-card .image-info {
+    margin-bottom: 0;
+}
+
+.resize-empty {
+    padding: 18px 6px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-style: italic;
+    text-align: center;
+}
+
+.resize-controls,
+.resize-format-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.resize-controls {
+    margin-bottom: 16px;
+}
+
+.resize-format-grid {
+    align-items: start;
+    margin-bottom: 20px;
+}
+
+.resize-controls .input-group,
+.resize-format-grid .input-group {
+    margin-bottom: 0;
+}
+
+.resize-field {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.6);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.resize-field:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow:
+        0 0 0 4px rgba(99, 102, 241, 0.1),
+        0 0 20px rgba(99, 102, 241, 0.2);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+select.resize-field {
+    cursor: pointer;
+}
+
+select.resize-field option {
+    background: #1e293b;
+    color: var(--text-primary);
+}
+
+.resize-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: stretch;
+    margin-bottom: 16px;
+}
+
+.resize-lock-group {
+    flex: 1 1 240px;
+    margin: 0;
+}
+
+.resize-presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.resize-preset-btn {
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--glass);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.resize-preset-btn:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
+}
+
+.resize-preset-btn.active {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-color: transparent;
+    color: white;
+    box-shadow:
+        0 8px 25px rgba(99, 102, 241, 0.4),
+        0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.resize-quality-group[hidden] {
+    display: none;
+}
+
+.resize-format-grid.no-quality .input-group:first-child {
+    grid-column: 1 / -1;
+}
+
+.resize-quality-slider {
+    margin-top: 6px;
+}
+
+.resize-actions {
+    margin-top: 16px;
+}
+
+.resize-download-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.resize-note {
+    margin-top: 12px;
+    min-height: 18px;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
 /* Char Count Tool Styles */
 .char-stats {
     display: grid;
@@ -1761,6 +1936,7 @@ textarea::placeholder {
 .tool-nav .nav-btn:nth-child(6) { animation-delay: 0.3s; }
 .tool-nav .nav-btn:nth-child(7) { animation-delay: 0.35s; }
 .tool-nav .nav-btn:nth-child(8) { animation-delay: 0.4s; }
+.tool-nav .nav-btn:nth-child(9) { animation-delay: 0.45s; }
 
 /* Stat cards pop in on every route render */
 .tab-content.active .char-stat-card {
@@ -1801,6 +1977,7 @@ textarea::placeholder {
 .nav-btn:active,
 .algorithm-btn:active,
 .case-option:active,
+.resize-preset-btn:active,
 .bcrypt-mode-btn:active,
 .base64-mode-btn:active,
 .image-mode-btn:active {
@@ -1932,6 +2109,16 @@ textarea::placeholder {
 
     .base64-actions-inline button {
         flex: 1;
+    }
+
+    .resize-preview-grid,
+    .resize-controls,
+    .resize-format-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .resize-preview-card .image-preview {
+        height: 180px;
     }
 }
 

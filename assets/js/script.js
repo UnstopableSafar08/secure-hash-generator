@@ -34,7 +34,8 @@ const TOOLS = {
     base64: { title: 'Base64 Tool', desc: 'Encode and decode Base64 in realtime, including URL-safe output.' },
     charCount: { title: 'Char Count', desc: 'Count characters, words, lines and inspect character frequency.' },
     case: { title: 'Convert Case', desc: 'Convert text between upper, lower, title, sentence and code cases.' },
-    image: { title: 'Image Base64', desc: 'Convert images to Base64 data URLs and decode Base64 back into images.' }
+    image: { title: 'Image Base64', desc: 'Convert images to Base64 data URLs and decode Base64 back into images.' },
+    resize: { title: 'Image Resizer', desc: 'Resize images locally with aspect-ratio, format and quality controls.' }
 };
 
 function currentToolFromHash() {
@@ -1470,6 +1471,498 @@ copyAllStringsBtn.addEventListener('click', async () => {
         decodeInput.value = '';
         updateDecode();
         decodeInput.focus();
+    });
+})();
+
+// Image Resizer Tool (client-side canvas resizing with format + quality controls)
+(function initImageResizer() {
+    const dropzone = document.getElementById('resizeDropzone');
+    if (!dropzone) return;
+
+    const fileInput = document.getElementById('resizeFileInput');
+    const errorEl = document.getElementById('resizeError');
+    const editor = document.getElementById('resizeEditor');
+    const originalPreview = document.getElementById('resizeOriginalPreview');
+    const originalInfo = document.getElementById('resizeOriginalInfo');
+    const outputPreview = document.getElementById('resizeOutputPreview');
+    const outputInfo = document.getElementById('resizeOutputInfo');
+    const widthInput = document.getElementById('resizeWidth');
+    const heightInput = document.getElementById('resizeHeight');
+    const lockAspect = document.getElementById('resizeLockAspect');
+    const presetBtns = document.querySelectorAll('.resize-preset-btn');
+    const formatSelect = document.getElementById('resizeFormat');
+    const formatGrid = document.querySelector('.resize-format-grid');
+    const qualityGroup = document.getElementById('resizeQualityGroup');
+    const qualityInput = document.getElementById('resizeQuality');
+    const qualityValue = document.getElementById('resizeQualityValue');
+    const downloadBtn = document.getElementById('resizeDownloadBtn');
+    const resetBtn = document.getElementById('resizeResetBtn');
+    const clearBtn = document.getElementById('resizeClearBtn');
+    const noteEl = document.getElementById('resizeNote');
+
+    const MAX_DIMENSION = 10000;
+    const EMPTY_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+    const FORMAT_LABELS = {
+        'image/png': 'PNG',
+        'image/jpeg': 'JPEG',
+        'image/webp': 'WebP',
+        'image/gif': 'GIF',
+        'image/bmp': 'BMP',
+        'image/svg+xml': 'SVG',
+        'image/avif': 'AVIF',
+        'image/x-icon': 'ICO',
+        'image/vnd.microsoft.icon': 'ICO'
+    };
+    const EXTENSIONS = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/webp': 'webp',
+        'image/gif': 'gif',
+        'image/bmp': 'bmp',
+        'image/svg+xml': 'svg',
+        'image/x-icon': 'ico'
+    };
+
+    let sourceImage = null;
+    let sourceWidth = 0;
+    let sourceHeight = 0;
+    let originalMime = '';
+    let originalFileName = 'image';
+    let originalSize = 0;
+    let sourceUrl = '';
+    let outputUrl = '';
+    let outputBlob = null;
+    let outputExt = 'png';
+    let renderTimer = null;
+    let renderToken = 0;
+    let loadToken = 0;
+
+    function formatBytes(n) {
+        if (!Number.isFinite(n)) return '—';
+        if (n < 1024) return n + ' B';
+        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+        return (n / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function infoRow(label, value) {
+        return '<div class="image-info-row"><span>' + label + '</span><strong>' + value + '</strong></div>';
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function mimeLabel(mime) {
+        return FORMAT_LABELS[mime] || mime || 'Unknown';
+    }
+
+    function extensionForMime(mime) {
+        return EXTENSIONS[mime] || 'png';
+    }
+
+    function detectMime(file) {
+        const type = (file.type || '').toLowerCase();
+        if (type === 'image/jpg') return 'image/jpeg';
+        if (type.startsWith('image/')) return type;
+        const ext = (file.name || '').split('.').pop().toLowerCase();
+        const byExtension = {
+            png: 'image/png',
+            jpg: 'image/jpeg',
+            jpeg: 'image/jpeg',
+            webp: 'image/webp',
+            gif: 'image/gif',
+            bmp: 'image/bmp',
+            svg: 'image/svg+xml',
+            avif: 'image/avif',
+            ico: 'image/x-icon'
+        };
+        return byExtension[ext] || '';
+    }
+
+    function resolveOutputMime() {
+        const selected = formatSelect.value;
+        if (selected !== 'original') return selected;
+        if (originalMime === 'image/png' || originalMime === 'image/jpeg' || originalMime === 'image/webp') {
+            return originalMime;
+        }
+        return 'image/png';
+    }
+
+    function usesQuality(mime) {
+        return mime === 'image/jpeg' || mime === 'image/webp';
+    }
+
+    function fitWithin(width, height, limit) {
+        const scale = Math.min(1, limit / Math.max(width, height));
+        return {
+            width: Math.max(1, Math.round(width * scale)),
+            height: Math.max(1, Math.round(height * scale))
+        };
+    }
+
+    function updateQualityVisibility() {
+        const showQuality = usesQuality(resolveOutputMime());
+        qualityGroup.hidden = !showQuality;
+        formatGrid.classList.toggle('no-quality', !showQuality);
+    }
+
+    function updateOriginalFormatOption() {
+        formatSelect.options[0].textContent = originalMime
+            ? 'Keep original (' + mimeLabel(originalMime) + ')'
+            : 'Keep original';
+    }
+
+    function showError(message) {
+        errorEl.textContent = message || '';
+    }
+
+    function clearOutput() {
+        renderToken++;
+        if (outputUrl) {
+            URL.revokeObjectURL(outputUrl);
+            outputUrl = '';
+        }
+        outputBlob = null;
+        downloadBtn.disabled = true;
+        outputPreview.src = EMPTY_IMAGE;
+        outputInfo.innerHTML = '<div class="resize-empty">Choose dimensions to preview</div>';
+        noteEl.textContent = '';
+    }
+
+    function setPresetActive(scale) {
+        presetBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.scale === String(scale));
+        });
+    }
+
+    function clearPresetActive() {
+        presetBtns.forEach(btn => btn.classList.remove('active'));
+    }
+
+    function applyOriginalDimensions() {
+        const fitted = fitWithin(sourceWidth, sourceHeight, MAX_DIMENSION);
+        widthInput.value = fitted.width;
+        heightInput.value = fitted.height;
+    }
+
+    function readDimension(input, label) {
+        const raw = input.value.trim();
+        if (raw === '') return null;
+        const value = Number(raw);
+        if (!Number.isFinite(value) || value < 1) {
+            throw new Error(label + ' must be at least 1 px.');
+        }
+        if (value > MAX_DIMENSION) {
+            throw new Error(label + ' cannot exceed ' + MAX_DIMENSION.toLocaleString() + ' px.');
+        }
+        return Math.round(value);
+    }
+
+    function buildOutputNote(mime) {
+        const notes = [];
+        if (originalMime === 'image/gif') {
+            notes.push('Animated GIFs are exported as a single still frame.');
+        }
+        if (formatSelect.value === 'original' &&
+            originalMime !== 'image/png' && originalMime !== 'image/jpeg' && originalMime !== 'image/webp') {
+            notes.push('This source format is re-encoded as PNG.');
+        }
+        if (mime === 'image/jpeg') {
+            notes.push('Transparent areas are filled with white for JPEG.');
+        }
+        return notes.join(' ');
+    }
+
+    function renderResize() {
+        if (!sourceImage) return;
+
+        let width;
+        let height;
+        try {
+            width = readDimension(widthInput, 'Width');
+            height = readDimension(heightInput, 'Height');
+        } catch (err) {
+            showError(err.message);
+            downloadBtn.disabled = true;
+            return;
+        }
+
+        if (width === null || height === null) {
+            showError('');
+            downloadBtn.disabled = true;
+            return;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            showError('This image is too large to resize in your browser.');
+            downloadBtn.disabled = true;
+            return;
+        }
+
+        const mime = resolveOutputMime();
+        if (mime === 'image/jpeg') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+        }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(sourceImage, 0, 0, width, height);
+
+        const token = ++renderToken;
+        const quality = Math.min(1, Math.max(0.1, parseInt(qualityInput.value, 10) / 100));
+        try {
+            canvas.toBlob(blob => {
+                if (token !== renderToken) return;
+                if (!blob) {
+                    showError('Could not resize this image. Try smaller dimensions.');
+                    downloadBtn.disabled = true;
+                    return;
+                }
+
+                showError('');
+                if (outputUrl) URL.revokeObjectURL(outputUrl);
+                outputBlob = blob;
+                const actualMime = blob.type || mime;
+                outputExt = extensionForMime(actualMime);
+                outputUrl = URL.createObjectURL(blob);
+                outputPreview.src = outputUrl;
+
+                let info = infoRow('Format', mimeLabel(actualMime)) +
+                    infoRow('Dimensions', width.toLocaleString() + ' × ' + height.toLocaleString() + ' px') +
+                    infoRow('File size', formatBytes(blob.size));
+                if (usesQuality(actualMime)) {
+                    info += infoRow('Quality', qualityInput.value + '%');
+                }
+                outputInfo.innerHTML = info;
+                downloadBtn.disabled = false;
+                noteEl.textContent = buildOutputNote(actualMime);
+            }, mime, quality);
+        } catch (err) {
+            showError('Could not resize this image. Try smaller dimensions.');
+            downloadBtn.disabled = true;
+        }
+    }
+
+    function scheduleRender() {
+        clearTimeout(renderTimer);
+        renderTimer = setTimeout(renderResize, 180);
+    }
+
+    function syncHeightFromWidth() {
+        if (!lockAspect.checked || !sourceWidth || !sourceHeight) return;
+        const width = Number(widthInput.value);
+        if (Number.isFinite(width) && width >= 1) {
+            heightInput.value = Math.max(1, Math.round(width * sourceHeight / sourceWidth));
+        }
+    }
+
+    function syncWidthFromHeight() {
+        if (!lockAspect.checked || !sourceWidth || !sourceHeight) return;
+        const height = Number(heightInput.value);
+        if (Number.isFinite(height) && height >= 1) {
+            widthInput.value = Math.max(1, Math.round(height * sourceWidth / sourceHeight));
+        }
+    }
+
+    function updateQualityLabel() {
+        qualityValue.textContent = qualityInput.value + '%';
+    }
+
+    function loadFile(file) {
+        showError('');
+        if (!file) return;
+
+        const mime = detectMime(file);
+        if (!mime) {
+            showError('Please select an image file (PNG, JPEG, WebP, GIF, BMP, SVG or AVIF).');
+            return;
+        }
+
+        const token = ++loadToken;
+        const nextUrl = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            if (token !== loadToken) {
+                URL.revokeObjectURL(nextUrl);
+                return;
+            }
+            if (!img.naturalWidth || !img.naturalHeight) {
+                URL.revokeObjectURL(nextUrl);
+                showError('Could not determine the dimensions of that image.');
+                return;
+            }
+
+            if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+            sourceUrl = nextUrl;
+            sourceImage = img;
+            sourceWidth = img.naturalWidth;
+            sourceHeight = img.naturalHeight;
+            originalMime = mime;
+            originalFileName = file.name || 'image';
+            originalSize = file.size;
+
+            originalPreview.src = nextUrl;
+            originalInfo.innerHTML =
+                infoRow('File', escapeHtml(originalFileName)) +
+                infoRow('Type', mimeLabel(originalMime)) +
+                infoRow('Original size', formatBytes(originalSize)) +
+                infoRow('Dimensions', sourceWidth.toLocaleString() + ' × ' + sourceHeight.toLocaleString() + ' px');
+
+            applyOriginalDimensions();
+            lockAspect.checked = true;
+            formatSelect.value = 'original';
+            qualityInput.value = 90;
+            updateQualityLabel();
+            updateOriginalFormatOption();
+            updateQualityVisibility();
+            clearPresetActive();
+            clearOutput();
+            editor.style.display = 'block';
+            renderResize();
+            editor.scrollIntoView({
+                behavior: prefersReducedMotion.matches ? 'auto' : 'smooth',
+                block: 'nearest'
+            });
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(nextUrl);
+            if (token === loadToken) {
+                showError('Could not load that image. Please try another file.');
+            }
+        };
+        img.src = nextUrl;
+    }
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInput.click();
+        }
+    });
+    fileInput.addEventListener('change', () => {
+        loadFile(fileInput.files[0]);
+        fileInput.value = '';
+    });
+    ['dragenter', 'dragover'].forEach(ev => dropzone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    }));
+    ['dragleave', 'drop'].forEach(ev => dropzone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+    }));
+    dropzone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) loadFile(e.dataTransfer.files[0]);
+    });
+
+    widthInput.addEventListener('input', () => {
+        clearPresetActive();
+        syncHeightFromWidth();
+        scheduleRender();
+    });
+
+    heightInput.addEventListener('input', () => {
+        clearPresetActive();
+        syncWidthFromHeight();
+        scheduleRender();
+    });
+
+    lockAspect.addEventListener('change', () => {
+        if (lockAspect.checked) {
+            clearPresetActive();
+            syncHeightFromWidth();
+            scheduleRender();
+        }
+    });
+
+    presetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!sourceImage) return;
+            const scale = parseFloat(btn.dataset.scale);
+            const fitted = fitWithin(
+                Math.max(1, Math.round(sourceWidth * scale)),
+                Math.max(1, Math.round(sourceHeight * scale)),
+                MAX_DIMENSION
+            );
+            widthInput.value = fitted.width;
+            heightInput.value = fitted.height;
+            setPresetActive(btn.dataset.scale);
+            showError('');
+            renderResize();
+        });
+    });
+
+    formatSelect.addEventListener('change', () => {
+        updateQualityVisibility();
+        scheduleRender();
+    });
+
+    qualityInput.addEventListener('input', () => {
+        updateQualityLabel();
+        scheduleRender();
+    });
+
+    resetBtn.addEventListener('click', () => {
+        if (!sourceImage) return;
+        applyOriginalDimensions();
+        lockAspect.checked = true;
+        formatSelect.value = 'original';
+        qualityInput.value = 90;
+        updateQualityLabel();
+        updateQualityVisibility();
+        clearPresetActive();
+        showError('');
+        renderResize();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        clearTimeout(renderTimer);
+        renderToken++;
+        loadToken++;
+        if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+        sourceUrl = '';
+        sourceImage = null;
+        sourceWidth = 0;
+        sourceHeight = 0;
+        originalMime = '';
+        originalFileName = 'image';
+        originalSize = 0;
+        originalPreview.removeAttribute('src');
+        originalInfo.innerHTML = '';
+        widthInput.value = '';
+        heightInput.value = '';
+        lockAspect.checked = true;
+        formatSelect.value = 'original';
+        qualityInput.value = 90;
+        updateQualityLabel();
+        clearOutput();
+        editor.style.display = 'none';
+        showError('');
+        fileInput.value = '';
+        dropzone.focus();
+    });
+
+    downloadBtn.addEventListener('click', () => {
+        if (!outputBlob) return;
+        const baseName = (originalFileName || 'image').replace(/\.[^.]+$/, '') || 'image';
+        const name = baseName + '-' + widthInput.value + 'x' + heightInput.value + '.' + outputExt;
+        const url = URL.createObjectURL(outputBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
 })();
 

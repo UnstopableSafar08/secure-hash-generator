@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Tools — Hash, Password, Bcrypt, Base64, Case Converter &amp; Char Count</title>
-    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder, case converter and character counter. All processing happens locally in your browser — no data leaves your device.">
+    <title>Secure Tools — Hash, Password, Bcrypt, Base64, Case Converter, Image Resizer &amp; Char Count</title>
+    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder, case converter, image resizer and character counter. All processing happens locally in your browser — no data leaves your device.">
     <meta name="theme-color" content="#0f172a">
     <meta property="og:title" content="Secure Tools">
-    <meta property="og:description" content="Hash, password, bcrypt, Base64, case-conversion and char-count utilities that run 100% locally in your browser.">
+    <meta property="og:description" content="Hash, password, bcrypt, Base64, case-conversion, image resizing and char-count utilities that run 100% locally in your browser.">
     <meta property="og:type" content="website">
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
@@ -18,7 +18,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css?v=12">
+    <link rel="stylesheet" href="assets/css/styles.css?v=13">
     <script src="assets/js/lucide.min.js?v=1.58.0"></script>
 </head>
 
@@ -71,6 +71,10 @@
                 <button class="nav-btn" data-tool="image">
                     <i data-lucide="image"></i>
                     <span class="nav-text"><span class="nav-label">Image Base64</span><span class="nav-desc">Images to Base64 &amp; back</span></span>
+                </button>
+                <button class="nav-btn" data-tool="resize">
+                    <i data-lucide="image-upscale"></i>
+                    <span class="nav-text"><span class="nav-label">Image Resizer</span><span class="nav-desc">Resize &amp; convert images</span></span>
                 </button>
             </nav>
 
@@ -514,6 +518,91 @@
             </div>
         </div>
 
+        <div class="tab-content" id="resizeTab">
+            <div class="dropzone" id="resizeDropzone" role="button" tabindex="0" aria-label="Select an image to resize">
+                <i data-lucide="image-upscale"></i>
+                <div class="dropzone-text"><strong>Drop an image here</strong> or click to browse</div>
+                <div class="dropzone-hint">PNG, JPEG, WebP, GIF, BMP or SVG — resized locally on your device</div>
+                <input type="file" id="resizeFileInput" accept="image/*" hidden>
+            </div>
+            <div class="image-error" id="resizeError" role="alert"></div>
+
+            <div id="resizeEditor" style="display: none;">
+                <div class="resize-preview-grid">
+                    <div class="resize-preview-card">
+                        <div class="resize-preview-label">Original</div>
+                        <div class="image-preview-wrap">
+                            <img id="resizeOriginalPreview" class="image-preview" alt="Original image preview">
+                        </div>
+                        <div class="image-info" id="resizeOriginalInfo"></div>
+                    </div>
+                    <div class="resize-preview-card">
+                        <div class="resize-preview-label">Resized</div>
+                        <div class="image-preview-wrap">
+                            <img id="resizeOutputPreview" class="image-preview" alt="Resized image preview">
+                        </div>
+                        <div class="image-info" id="resizeOutputInfo">
+                            <div class="resize-empty">Choose dimensions to preview</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resize-controls">
+                    <div class="input-group">
+                        <label for="resizeWidth">Width (px)</label>
+                        <input type="number" class="resize-field" id="resizeWidth" min="1" max="10000" step="1" inputmode="numeric">
+                    </div>
+                    <div class="input-group">
+                        <label for="resizeHeight">Height (px)</label>
+                        <input type="number" class="resize-field" id="resizeHeight" min="1" max="10000" step="1" inputmode="numeric">
+                    </div>
+                </div>
+
+                <div class="resize-toolbar">
+                    <div class="option-group resize-lock-group">
+                        <input type="checkbox" id="resizeLockAspect" checked>
+                        <label for="resizeLockAspect">Maintain aspect ratio</label>
+                    </div>
+                    <div class="resize-presets" role="group" aria-label="Resize presets">
+                        <button type="button" class="resize-preset-btn" data-scale="0.25">25%</button>
+                        <button type="button" class="resize-preset-btn" data-scale="0.5">50%</button>
+                        <button type="button" class="resize-preset-btn" data-scale="0.75">75%</button>
+                        <button type="button" class="resize-preset-btn" data-scale="1">100%</button>
+                    </div>
+                </div>
+
+                <div class="resize-format-grid">
+                    <div class="input-group">
+                        <label for="resizeFormat">Output format</label>
+                        <select class="resize-field" id="resizeFormat">
+                            <option value="original">Keep original</option>
+                            <option value="image/png">PNG</option>
+                            <option value="image/jpeg">JPEG</option>
+                            <option value="image/webp">WebP</option>
+                        </select>
+                    </div>
+                    <div class="input-group resize-quality-group" id="resizeQualityGroup">
+                        <label for="resizeQuality">Quality: <span id="resizeQualityValue">90%</span></label>
+                        <input type="range" class="length-slider resize-quality-slider" id="resizeQuality" min="10" max="100" step="1" value="90">
+                    </div>
+                </div>
+
+                <div class="strings-actions resize-actions">
+                    <button class="generate-strings-btn resize-download-btn" id="resizeDownloadBtn" disabled><i data-lucide="download"></i> Download</button>
+                    <button class="copy-all-strings-btn" id="resizeResetBtn"><i data-lucide="rotate-ccw"></i> Reset</button>
+                    <button class="base64-clear-btn" id="resizeClearBtn"><i data-lucide="trash-2"></i> Clear</button>
+                </div>
+
+                <div class="resize-note" id="resizeNote" role="status" aria-live="polite"></div>
+            </div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> Resizing happens entirely in your browser using the HTML canvas API.
+                    Images are never uploaded. Output is re-encoded, so animated GIFs become a still frame and
+                    canvas-unsupported source formats are exported as PNG. Maximum output dimension is 10,000 px.</p>
+            </div>
+        </div>
+
             <footer class="footer">
                 <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a> · Secure Tools runs entirely in your browser.</p>
             </footer>
@@ -547,7 +636,7 @@
             document.head.appendChild(script);
         })();
     </script>
-    <script src="assets/js/script.js?v=12"></script>
+    <script src="assets/js/script.js?v=13"></script>
 </body>
 
 </html>

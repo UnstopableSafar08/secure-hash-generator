@@ -1,6 +1,6 @@
 # Secure Tools
 
-A modern, secure web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, and counting characters. All operations are performed locally in your browser using the Web Crypto API - no data is sent to any server.
+A modern, secure web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, and counting characters. All operations are performed locally in your browser using the Web Crypto API - no data is sent to any server.
 
 ## Features
 
@@ -61,6 +61,14 @@ A modern, secure web application for generating hashes, passwords, random string
 - Raw Base64 or full data URL output, copy to clipboard, download as `.txt`
 - Decode: paste Base64/data URL for realtime preview with magic-byte format detection (PNG, JPEG, GIF, WebP, BMP, SVG) and one-click image download
 
+### 📐 Image Resizer
+- Drag & drop or browse an image, with original preview, dimensions, type, and file size
+- Width/height inputs with optional aspect-ratio locking and 25/50/75/100% presets
+- Live resized preview with output dimensions and actual file size
+- Output as the original format, PNG, JPEG, or WebP with quality control for JPEG/WebP
+- Download the resized image with one click
+- All resizing is performed locally with the canvas API — no uploads
+
 ## Security
 
 - All operations performed locally in your browser
@@ -114,7 +122,7 @@ secure-hash-generator/
 ## Navigation
 
 The sidebar lists all tools. Every tool is deep-linkable via hash routes
-(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`, `#/case`, `#/image`),
+(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`),
 so bookmarks and back/forward buttons work. The sidebar search filters the
 tool list, and the layout collapses to a top nav on small screens.
 
