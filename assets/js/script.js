@@ -2462,6 +2462,7 @@ copyAllStringsBtn.addEventListener('click', async () => {
             if (item.outputUrl) URL.revokeObjectURL(item.outputUrl);
         });
         items = [];
+        targetInput.value = '';
 
         renderGrid();
         updateSettingsUI();
