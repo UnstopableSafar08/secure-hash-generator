@@ -1,7 +1,7 @@
 {
   "name": "Secure Tools",
   "short_name": "Secure Tools",
-  "description": "Hash, password, bcrypt, Base64, case-conversion, image-resizing and char-count utilities that run 100% locally in your browser.",
+  "description": "Hash, password, bcrypt, Base64, case-conversion, image-resizing, PDF conversion and char-count utilities that run 100% locally in your browser.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Tools — Hash, Password, Bcrypt, Base64, Case Converter, Image Resizer &amp; Char Count</title>
-    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder, case converter, image resizer and character counter. All processing happens locally in your browser — no data leaves your device.">
+    <title>Secure Tools — Hash, Password, Bcrypt, Base64, Case Converter, Image Resizer, PDF Tools &amp; Char Count</title>
+    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder, case converter, image resizer, PDF to image converter, image to PDF converter and character counter. All processing happens locally in your browser — no data leaves your device.">
     <meta name="theme-color" content="#0f172a">
     <meta property="og:title" content="Secure Tools">
-    <meta property="og:description" content="Hash, password, bcrypt, Base64, case-conversion, image resizing and char-count utilities that run 100% locally in your browser.">
+    <meta property="og:description" content="Hash, password, bcrypt, Base64, case-conversion, image resizing, PDF conversion and char-count utilities that run 100% locally in your browser.">
     <meta property="og:type" content="website">
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
@@ -18,7 +18,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css?v=15">
+    <link rel="stylesheet" href="assets/css/styles.css?v=16">
     <script src="assets/js/lucide.min.js?v=1.58.0"></script>
 </head>
 
@@ -75,6 +75,14 @@
                 <button class="nav-btn" data-tool="resize">
                     <i data-lucide="image-upscale"></i>
                     <span class="nav-text"><span class="nav-label">Image Resizer</span><span class="nav-desc">Resize &amp; convert images</span></span>
+                </button>
+                <button class="nav-btn" data-tool="pdfToImages">
+                    <i data-lucide="file-image"></i>
+                    <span class="nav-text"><span class="nav-label">PDF to Images</span><span class="nav-desc">Pages to JPG, PNG &amp; WebP</span></span>
+                </button>
+                <button class="nav-btn" data-tool="imagesToPdf">
+                    <i data-lucide="file-text"></i>
+                    <span class="nav-text"><span class="nav-label">Images to PDF</span><span class="nav-desc">Combine images into a PDF</span></span>
                 </button>
             </nav>
 
@@ -679,6 +687,199 @@
             </div>
         </div>
 
+        <div class="tab-content" id="pdfToImagesTab">
+            <div class="resize-app pdf-app" id="pdfToImagesApp">
+                <aside class="resize-sidebar" aria-label="PDF to image settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="pdfToImagesAddBtn"><i data-lucide="file-up"></i> Add PDFs</button>
+                        <button type="button" class="resize-clear-all-btn" id="pdfToImagesClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear All</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="pdfToImagesDropzone" role="button" tabindex="0" aria-label="Add PDF files">
+                        <i data-lucide="file-up"></i>
+                        <div class="resize-dropzone-text"><strong>Drop PDFs here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">PDF files only</div>
+                        <div class="resize-dropzone-limit">Max 100 MB each</div>
+                        <input type="file" id="pdfToImagesFileInput" accept="application/pdf,.pdf" multiple hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="settings-2"></i> Convert Settings</h3>
+                        <div class="pdf-choice-row" id="pdfConvertMode" role="group" aria-label="Conversion mode">
+                            <button type="button" class="pdf-choice-btn active" data-pdf-mode="page">Page to image</button>
+                            <button type="button" class="pdf-choice-btn" data-pdf-mode="extract">Extract images</button>
+                        </div>
+                        <p class="resize-field-hint" id="pdfModeHint">Every selected page becomes one image file.</p>
+
+                        <div class="resize-export-field pdf-setting-gap">
+                            <label for="pdfImageFormat">Image Format</label>
+                            <select class="resize-field" id="pdfImageFormat">
+                                <option value="image/jpeg" selected>JPG</option>
+                                <option value="image/png">PNG</option>
+                                <option value="image/webp">WebP</option>
+                            </select>
+                        </div>
+
+                        <div class="resize-export-field" id="pdfQualityGroup">
+                            <label>Quality</label>
+                            <div class="pdf-choice-row" id="pdfQualityChoices" role="group" aria-label="Image quality">
+                                <button type="button" class="pdf-choice-btn" data-pdf-quality="normal">Normal</button>
+                                <button type="button" class="pdf-choice-btn active" data-pdf-quality="high">High</button>
+                            </div>
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="pdfPageRange">Page Range</label>
+                            <input type="text" class="resize-field" id="pdfPageRange" placeholder="All pages" autocomplete="off">
+                            <p class="resize-field-hint" id="pdfPageRangeHint">Optional — use 1-5, 8 or 11-14. Applies to each PDF.</p>
+                        </div>
+
+                        <button type="button" class="resize-export-btn" id="pdfConvertBtn" disabled><i data-lucide="scan-line"></i> Convert</button>
+                        <button type="button" class="pdf-cancel-btn" id="pdfCancelBtn" hidden><i data-lucide="x"></i> Cancel conversion</button>
+                        <p class="resize-export-hint" id="pdfConvertHint">Add PDFs to enable conversion.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" aria-label="PDF to image workspace">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>PDF Files <span class="resize-count" id="pdfToImagesCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="pdfToImagesSub">Add PDFs to convert their pages or images.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="pdfToImagesTotal"></div>
+                    </div>
+
+                    <div class="resize-empty" id="pdfToImagesEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="file-image"></i></div>
+                        <h4>No PDFs yet</h4>
+                        <p>Drop PDFs here or use Add PDFs. Pages and embedded images are converted entirely on your device.</p>
+                        <button type="button" class="resize-empty-btn" id="pdfToImagesEmptyAddBtn"><i data-lucide="file-up"></i> Select PDFs</button>
+                        <span>Up to 10 PDFs · max 100 MB each</span>
+                    </div>
+
+                    <div class="pdf-doc-list" id="pdfToImagesDocs" hidden></div>
+
+                    <div class="pdf-results" id="pdfToImagesResultsSection" hidden>
+                        <div class="pdf-results-head">
+                            <div>
+                                <h4>Converted Images <span class="pdf-result-count" id="pdfResultCount">0</span></h4>
+                                <p id="pdfResultSummary"></p>
+                            </div>
+                            <button type="button" class="pdf-download-all-btn" id="pdfDownloadAllBtn" disabled><i data-lucide="archive"></i> Download ZIP</button>
+                        </div>
+                        <div class="pdf-result-grid" id="pdfToImagesResults" role="list"></div>
+                    </div>
+
+                    <div class="resize-status" id="pdfToImagesStatus" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+
+            <div class="image-error resize-error" id="pdfToImagesError" role="alert"></div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> PDFs are parsed and rendered entirely in your browser with PDF.js —
+                    files are never uploaded. Page mode renders each selected page; Extract images pulls embedded raster
+                    images out of the PDF and is best-effort for unusual masks, tiling, or unsupported image codecs.
+                    JPG output fills transparent areas with white. Maximum output dimension is 10,000 px.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="imagesToPdfTab">
+            <div class="resize-app pdf-app" id="imagesToPdfApp">
+                <aside class="resize-sidebar" aria-label="Image to PDF settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="imagesToPdfAddBtn"><i data-lucide="image-plus"></i> Add Images</button>
+                        <button type="button" class="resize-clear-all-btn" id="imagesToPdfClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear All</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="imagesToPdfDropzone" role="button" tabindex="0" aria-label="Add images to convert to PDF">
+                        <i data-lucide="image-plus"></i>
+                        <div class="resize-dropzone-text"><strong>Drop images here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">JPG, PNG, WebP, GIF, BMP or AVIF</div>
+                        <div class="resize-dropzone-limit">Max 10 MB per image</div>
+                        <input type="file" id="imagesToPdfFileInput" accept="image/*" multiple hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="file-text"></i> PDF Settings</h3>
+                        <div class="resize-export-field">
+                            <label for="imagePdfPageSize">Page Size</label>
+                            <select class="resize-field" id="imagePdfPageSize">
+                                <option value="fit" selected>Fit — same size as image</option>
+                                <option value="a4">A4 — 210 × 297 mm</option>
+                                <option value="letter">US Letter — 8.5 × 11 in</option>
+                            </select>
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="imagePdfOrientation">Orientation</label>
+                            <select class="resize-field" id="imagePdfOrientation" disabled>
+                                <option value="portrait" selected>Portrait</option>
+                                <option value="landscape">Landscape</option>
+                            </select>
+                            <p class="resize-field-hint" id="imagePdfOrientationHint">Fit mode follows each image's own orientation.</p>
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="imagePdfMargin">Margin</label>
+                            <select class="resize-field" id="imagePdfMargin">
+                                <option value="none" selected>No margin</option>
+                                <option value="small">Small — 0.25 in</option>
+                                <option value="big">Big — 0.5 in</option>
+                            </select>
+                            <p class="resize-field-hint" id="imagePdfMarginHint">Margins apply to A4 and US Letter pages.</p>
+                        </div>
+
+                        <div class="pdf-summary-box" id="imagePdfSummary">
+                            <span>1 image</span>
+                            <strong>1 PDF page</strong>
+                        </div>
+
+                        <button type="button" class="resize-export-btn" id="imagesToPdfExportBtn" disabled><i data-lucide="download"></i> Create PDF</button>
+                        <p class="resize-export-hint" id="imagesToPdfHint">Add images to enable export.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" aria-label="Image to PDF workspace">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>Images <span class="resize-count" id="imagesToPdfCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="imagesToPdfSub">Add images and arrange their page order.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="imagesToPdfTotal"></div>
+                    </div>
+
+                    <div class="resize-empty" id="imagesToPdfEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="images"></i></div>
+                        <h4>No images yet</h4>
+                        <p>Drop images here or use Add Images. Each image becomes a page in a single PDF.</p>
+                        <button type="button" class="resize-empty-btn" id="imagesToPdfEmptyAddBtn"><i data-lucide="image-plus"></i> Select Images</button>
+                        <span>Up to 50 images · max 10 MB each</span>
+                    </div>
+
+                    <div class="resize-grid pdf-image-grid" id="imagesToPdfGrid" role="list" hidden></div>
+                    <div class="pdf-output" id="imagesToPdfOutput" hidden>
+                        <div class="pdf-output-icon"><i data-lucide="file-check-2"></i></div>
+                        <div class="pdf-output-body">
+                            <strong id="imagesToPdfOutputName">images-to-pdf.pdf</strong>
+                            <span id="imagesToPdfOutputMeta"></span>
+                        </div>
+                        <button type="button" class="pdf-output-download" id="imagesToPdfDownloadBtn"><i data-lucide="download"></i> Download</button>
+                    </div>
+                    <div class="resize-status" id="imagesToPdfStatus" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+
+            <div class="image-error resize-error" id="imagesToPdfError" role="alert"></div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> Images are combined into a PDF entirely in your browser with pdf-lib —
+                    nothing is uploaded. JPG and PNG files are embedded without unnecessary recompression. Drag cards to
+                    reorder them, or use the arrow buttons. Fit mode creates a page for each image; A4 and Letter scale
+                    images proportionally inside the selected margins.</p>
+            </div>
+        </div>
+
             <footer class="footer">
                 <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a> · Secure Tools runs entirely in your browser.</p>
             </footer>
@@ -712,7 +913,8 @@
             document.head.appendChild(script);
         })();
     </script>
-    <script src="assets/js/script.js?v=15"></script>
+    <script src="assets/js/script.js?v=16"></script>
+    <script src="assets/js/pdf-tool.js?v=17"></script>
 </body>
 
 </html>

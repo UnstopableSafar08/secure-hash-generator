@@ -1,6 +1,6 @@
 # Secure Tools
 
-A modern, secure web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, and counting characters. All operations are performed locally in your browser using the Web Crypto API - no data is sent to any server.
+A modern, secure web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, converting PDFs to images and images to PDF, and counting characters. All operations are performed locally in your browser using the Web Crypto API - no data is sent to any server.
 
 ## Features
 
@@ -72,6 +72,29 @@ A modern, secure web application for generating hashes, passwords, random string
 - Remove individual images or clear the whole batch
 - All resizing is performed locally with the canvas API — no uploads
 
+### 🖼️ PDF to Images
+- Upload up to 10 PDFs at once via drag & drop or the file picker (max 100 MB and 200 pages each)
+- Two modes: **Page to image** renders selected pages, while **Extract images** pulls embedded raster images out of the PDF
+- Export as JPG, PNG, or WebP with **Normal** (150 DPI) or **High** (300 DPI) page rendering
+- Optional page ranges such as `1-5, 8, 11-14`
+- Password-protected PDFs get an in-app password prompt
+- Result cards show a thumbnail, filename, page number, dimensions, file size, and individual download
+- Single results download directly; multiple images are packaged into a ZIP archive
+- Embedded-image extraction is best-effort for unusual masks, tiling, and uncommon image codecs
+- Rendered with PDF.js entirely in the browser — no uploads
+
+### 📄 Images to PDF
+- Add up to 50 images at once via drag & drop or the file picker (max 10 MB each; 100 MB total)
+- Supports JPG, PNG, WebP, GIF, BMP, and AVIF input
+- Reorder pages by dragging cards or using the arrow buttons; rotate any image in 90° steps
+- Page size: **Fit** (matches each image), **A4**, or **US Letter**
+- Orientation: **Portrait** or **Landscape** for fixed page sizes
+- Margin: **None**, **Small** (0.25 in), or **Big** (0.5 in)
+- JPG and PNG files are embedded without unnecessary recompression when possible
+- Other formats, rotated images, and images with EXIF orientation are re-encoded locally
+- Produces one PDF with one image per page, plus a re-download button
+- Built with pdf-lib entirely in the browser — no uploads
+
 ## Security
 
 - All operations performed locally in your browser
@@ -88,6 +111,8 @@ A modern, secure web application for generating hashes, passwords, random string
 - **Vanilla JavaScript** - No frameworks, pure JS
 - **Lucide Icons** - Icon set vendored locally at `assets/js/lucide.min.js` (no CDN dependency)
 - **Web Crypto API** - Secure cryptographic operations
+- **PDF.js** - PDF parsing, page rendering, and image extraction, vendored locally at `assets/vendor/pdfjs/`
+- **pdf-lib** - PDF creation, vendored locally at `assets/vendor/pdf-lib/`
 - **bcryptjs** - Bcrypt hashing library (loaded via CDN)
 
 ## Getting Started
@@ -113,11 +138,15 @@ secure-hash-generator/
 │   ├── css/
 │   │   └── styles.css      # All styling
 │   ├── js/
-│   │   ├── script.js       # All tool logic + hash router
+│   │   ├── script.js       # Core tool logic + hash router
+│   │   ├── pdf-tool.js     # PDF to images + images to PDF logic
 │   │   └── lucide.min.js   # Lucide icons, vendored (no CDN)
-│   └── img/
-│       ├── icon.svg        # App/PWA icon
-│       └── favicon.ico     # Browser favicon
+│   ├── img/
+│   │   ├── icon.svg        # App/PWA icon
+│   │   └── favicon.ico     # Browser favicon
+│   └── vendor/
+│       ├── pdfjs/          # PDF.js build, worker, cmaps, standard fonts
+│       └── pdf-lib/        # pdf-lib UMD build
 ├── README.md               # This file
 └── .gitignore              # Git ignore rules
 ```
@@ -125,7 +154,7 @@ secure-hash-generator/
 ## Navigation
 
 The sidebar lists all tools. Every tool is deep-linkable via hash routes
-(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`),
+(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`, `#/pdfToImages`, `#/imagesToPdf`),
 so bookmarks and back/forward buttons work. The sidebar search filters the
 tool list, and the layout collapses to a top nav on small screens.
 

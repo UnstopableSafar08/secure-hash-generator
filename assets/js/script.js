@@ -35,7 +35,9 @@ const TOOLS = {
     charCount: { title: 'Char Count', desc: 'Count characters, words, lines and inspect character frequency.' },
     case: { title: 'Convert Case', desc: 'Convert text between upper, lower, title, sentence and code cases.' },
     image: { title: 'Image Base64', desc: 'Convert images to Base64 data URLs and decode Base64 back into images.' },
-    resize: { title: 'Image Resizer', desc: 'Bulk resize, crop and convert images locally with size, percentage and social presets.' }
+    resize: { title: 'Image Resizer', desc: 'Bulk resize, crop and convert images locally with size, percentage and social presets.' },
+    pdfToImages: { title: 'PDF to Images', desc: 'Render PDF pages or extract embedded images as JPG, PNG or WebP.' },
+    imagesToPdf: { title: 'Images to PDF', desc: 'Combine JPG, PNG, WebP, GIF, BMP or AVIF images into one PDF.' }
 };
 
 function currentToolFromHash() {
