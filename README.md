@@ -1,6 +1,6 @@
 # Secure Tools
 
-A modern, secure web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, converting PDFs to images and images to PDF, and counting characters. All operations are performed locally in your browser using the Web Crypto API - no data is sent to any server.
+A modern, secure web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, converting and editing PDFs, and counting characters. All operations are performed locally in your browser using the Web Crypto API and client-side JavaScript libraries - no data is sent to any server.
 
 ## Features
 
@@ -95,6 +95,51 @@ A modern, secure web application for generating hashes, passwords, random string
 - Produces one PDF with one image per page, plus a re-download button
 - Built with pdf-lib entirely in the browser — no uploads
 
+### 📝 PDF to Word
+- Converts selectable PDF text into an editable `.docx` Word document
+- Optional page range such as `1-5, 8, 11-14`
+- Preserves reading order line by line and inserts page breaks between PDF pages
+- Password-protected PDFs get an in-app password prompt
+- Supports up to 500 pages per conversion
+- Text-only conversion: images, tables, multi-column layouts, fonts, and exact positioning are not preserved
+- Scanned PDFs without a text layer need OCR first; the tool reports when no selectable text is found
+- Built with PDF.js text extraction and a minimal client-side DOCX/ZIP writer
+
+### ✂️ Split PDF
+- Split one PDF into **one file per page**, **every N pages**, or **custom ranges**
+- Custom ranges accept page numbers and ranges such as `1-3, 4-6, 8`
+- Result cards show the page ranges and file sizes, with individual downloads
+- Multiple results can be downloaded together as a ZIP archive
+- Password-protected inputs prompt for their password locally
+- Split outputs are new, unencrypted PDFs even when the source was password-protected
+- Built with pdf-lib entirely in the browser
+
+### 🔗 Merge PDFs
+- Combine up to 20 PDFs into a single document
+- Reorder files with the up/down buttons before merging
+- Configurable output filename
+- Password-protected inputs prompt for each password locally
+- Merged output is unencrypted; use **Protect PDF** afterwards if needed
+- Built with pdf-lib entirely in the browser
+
+### 🏷️ Watermark PDF
+- Stamp visible text across all pages or a chosen page range
+- Controls for text, font size (8–240), opacity (5–100%), rotation (0°, 45°, 90°, or -45°), and color
+- Automatically scales long watermark text to fit the page
+- Password-protected inputs prompt for their password locally
+- Watermarks are visual overlays, not digital rights management
+- Standard PDF fonts work best with Latin characters; some symbols and scripts may not render correctly
+- Built with pdf-lib entirely in the browser
+
+### 🔒 Protect PDF
+- Encrypt a PDF with a user (open) password and optional owner password
+- AES-256 encryption by default
+- Permission controls for printing, copying text, and editing
+- Protects both regular PDFs and PDFs that were already password-protected (re-encrypts with the new password)
+- Passwords are never stored or uploaded, and there is no password recovery
+- Some PDF readers may ignore permission flags even when encryption is applied
+- Built with the `@cantoo/pdf-lib` build of pdf-lib, which adds encryption support
+
 ## Security
 
 - All operations performed locally in your browser
@@ -103,6 +148,8 @@ A modern, secure web application for generating hashes, passwords, random string
 - SHA-256, SHA-384, and SHA-512 are recommended for security purposes
 - SHA-1 and MD5 are included for compatibility but are considered cryptographically broken
 - Bcrypt is designed to be slow and resistant to brute-force attacks
+- PDF encryption uses AES-256 in the browser; passwords are held only in memory for the current operation
+- Split, merge, and watermarked outputs are unencrypted unless you protect them afterwards
 
 ## Tech Stack
 
@@ -112,7 +159,7 @@ A modern, secure web application for generating hashes, passwords, random string
 - **Lucide Icons** - Icon set vendored locally at `assets/js/lucide.min.js` (no CDN dependency)
 - **Web Crypto API** - Secure cryptographic operations
 - **PDF.js** - PDF parsing, page rendering, and image extraction, vendored locally at `assets/vendor/pdfjs/`
-- **pdf-lib** - PDF creation, vendored locally at `assets/vendor/pdf-lib/`
+- **pdf-lib** (`@cantoo/pdf-lib` build) - PDF creation, page operations, watermarks, and AES-256 encryption, vendored locally at `assets/vendor/pdf-lib/`
 - **bcryptjs** - Bcrypt hashing library (loaded via CDN)
 
 ## Getting Started
@@ -138,9 +185,10 @@ secure-hash-generator/
 │   ├── css/
 │   │   └── styles.css      # All styling
 │   ├── js/
-│   │   ├── script.js       # Core tool logic + hash router
-│   │   ├── pdf-tool.js     # PDF to images + images to PDF logic
-│   │   └── lucide.min.js   # Lucide icons, vendored (no CDN)
+│   │   ├── script.js           # Core tool logic + hash router
+│   │   ├── pdf-tool.js         # PDF to images + images to PDF logic
+│   │   ├── pdf-extra-tools.js  # PDF to Word, split, merge, watermark, protect
+│   │   └── lucide.min.js       # Lucide icons, vendored (no CDN)
 │   ├── img/
 │   │   ├── icon.svg        # App/PWA icon
 │   │   └── favicon.ico     # Browser favicon
@@ -154,7 +202,7 @@ secure-hash-generator/
 ## Navigation
 
 The sidebar lists all tools. Every tool is deep-linkable via hash routes
-(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`, `#/pdfToImages`, `#/imagesToPdf`),
+(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`, `#/pdfToImages`, `#/pdfToWord`, `#/imagesToPdf`, `#/splitPdf`, `#/mergePdf`, `#/watermarkPdf`, `#/protectPdf`),
 so bookmarks and back/forward buttons work. The sidebar search filters the
 tool list, and the layout collapses to a top nav on small screens.
 

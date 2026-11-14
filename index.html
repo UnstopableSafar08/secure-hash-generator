@@ -18,7 +18,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css?v=21">
+    <link rel="stylesheet" href="assets/css/styles.css?v=22">
     <script src="assets/js/lucide.min.js?v=1.58.0"></script>
 </head>
 
@@ -117,9 +117,29 @@
                             <i data-lucide="file-image"></i>
                             <span class="nav-text"><span class="nav-label">PDF to Images</span><span class="nav-desc">Pages to JPG, PNG &amp; WebP</span></span>
                         </button>
+                        <button class="nav-btn" data-tool="pdfToWord">
+                            <i data-lucide="file-type"></i>
+                            <span class="nav-text"><span class="nav-label">PDF to Word</span><span class="nav-desc">Extract text into a DOCX file</span></span>
+                        </button>
                         <button class="nav-btn" data-tool="imagesToPdf">
                             <i data-lucide="file-text"></i>
                             <span class="nav-text"><span class="nav-label">Images to PDF</span><span class="nav-desc">Combine images into a PDF</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="splitPdf">
+                            <i data-lucide="scissors"></i>
+                            <span class="nav-text"><span class="nav-label">Split PDF</span><span class="nav-desc">Pages &amp; custom ranges</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="mergePdf">
+                            <i data-lucide="combine"></i>
+                            <span class="nav-text"><span class="nav-label">Merge PDFs</span><span class="nav-desc">Combine PDFs in order</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="watermarkPdf">
+                            <i data-lucide="stamp"></i>
+                            <span class="nav-text"><span class="nav-label">Watermark PDF</span><span class="nav-desc">Stamp text on your pages</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="protectPdf">
+                            <i data-lucide="lock-keyhole"></i>
+                            <span class="nav-text"><span class="nav-label">Protect PDF</span><span class="nav-desc">AES-256 password &amp; permissions</span></span>
                         </button>
                     </div>
                 </div>
@@ -925,6 +945,411 @@
             </div>
         </div>
 
+        <div class="tab-content" id="pdfToWordTab">
+            <div class="resize-app pdf-app" id="pdfToWordApp">
+                <aside class="resize-sidebar" aria-label="PDF to Word settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="pdfToWordAddBtn"><i data-lucide="file-up"></i> Add PDF</button>
+                        <button type="button" class="resize-clear-all-btn" id="pdfToWordClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="pdfToWordDropzone" role="button" tabindex="0" aria-label="Add a PDF to convert to Word">
+                        <i data-lucide="file-type"></i>
+                        <div class="resize-dropzone-text"><strong>Drop a PDF here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">PDF files only</div>
+                        <div class="resize-dropzone-limit">Max 100 MB</div>
+                        <input type="file" id="pdfToWordFileInput" accept="application/pdf,.pdf" hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="file-type"></i> Word Output</h3>
+                        <div class="resize-export-field">
+                            <label for="pdfToWordRange">Page Range</label>
+                            <input type="text" class="resize-field" id="pdfToWordRange" placeholder="All pages" autocomplete="off">
+                            <p class="resize-field-hint">Optional — use 1-5, 8 or 11-14.</p>
+                        </div>
+                        <button type="button" class="resize-export-btn" id="pdfToWordConvertBtn" disabled><i data-lucide="file-text"></i> Convert to Word</button>
+                        <p class="resize-export-hint" id="pdfToWordHint">Add a PDF to enable conversion.</p>
+                        <p class="resize-field-hint">Text-only conversion: selectable text becomes editable DOCX paragraphs. Images, tables, columns, and exact layout are not preserved.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" aria-label="PDF to Word workspace">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>PDF File <span class="resize-count" id="pdfToWordCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="pdfToWordSub">Add a PDF to extract its text.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="pdfToWordTotal"></div>
+                    </div>
+
+                    <div class="resize-empty" id="pdfToWordEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="file-type"></i></div>
+                        <h4>No PDF yet</h4>
+                        <p>Add a text-based PDF. Its selectable text is extracted locally and packaged as an editable Word document.</p>
+                        <button type="button" class="resize-empty-btn" id="pdfToWordEmptyAddBtn"><i data-lucide="file-up"></i> Select PDF</button>
+                        <span>Scanned PDFs need OCR and cannot be converted</span>
+                    </div>
+
+                    <div class="pdf-doc-list" id="pdfToWordDocs" hidden></div>
+
+                    <div class="pdf-output" id="pdfToWordOutput" hidden>
+                        <div class="pdf-output-icon"><i data-lucide="file-check-2"></i></div>
+                        <div class="pdf-output-body">
+                            <strong id="pdfToWordOutputName">document.docx</strong>
+                            <span id="pdfToWordOutputMeta"></span>
+                        </div>
+                        <button type="button" class="pdf-output-download" id="pdfToWordDownloadBtn"><i data-lucide="download"></i> Download</button>
+                    </div>
+
+                    <div class="resize-status" id="pdfToWordStatus" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+
+            <div class="image-error resize-error" id="pdfToWordError" role="alert"></div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> The PDF is parsed with PDF.js and the Word file is assembled entirely in your browser — nothing is uploaded. Password-protected PDFs prompt for their password locally. This is a text extraction, not a layout-perfect converter; scanned pages without a text layer need OCR first.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="splitPdfTab">
+            <div class="resize-app pdf-app" id="splitPdfApp">
+                <aside class="resize-sidebar" aria-label="Split PDF settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="splitPdfAddBtn"><i data-lucide="file-up"></i> Add PDF</button>
+                        <button type="button" class="resize-clear-all-btn" id="splitPdfClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="splitPdfDropzone" role="button" tabindex="0" aria-label="Add a PDF to split">
+                        <i data-lucide="scissors"></i>
+                        <div class="resize-dropzone-text"><strong>Drop a PDF here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">PDF files only</div>
+                        <div class="resize-dropzone-limit">Max 100 MB</div>
+                        <input type="file" id="splitPdfFileInput" accept="application/pdf,.pdf" hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="scissors"></i> Split Settings</h3>
+                        <div class="resize-export-field">
+                            <label for="splitPdfMode">Split Mode</label>
+                            <select class="resize-field" id="splitPdfMode">
+                                <option value="every" selected>One PDF per page</option>
+                                <option value="chunks">Every N pages</option>
+                                <option value="ranges">Custom ranges</option>
+                            </select>
+                            <p class="resize-field-hint" id="splitPdfModeHint">Creates a separate PDF for every page.</p>
+                        </div>
+
+                        <div class="resize-export-field" id="splitPdfChunksField" hidden>
+                            <label for="splitPdfChunks">Pages per file</label>
+                            <input type="number" class="resize-field" id="splitPdfChunks" value="2" min="1" max="200" step="1">
+                        </div>
+
+                        <div class="resize-export-field" id="splitPdfRangesField" hidden>
+                            <label for="splitPdfRanges">Ranges</label>
+                            <input type="text" class="resize-field" id="splitPdfRanges" placeholder="1-3, 4-6, 8" autocomplete="off">
+                            <p class="resize-field-hint">Each comma-separated range becomes one PDF. Use page numbers like 1-3, 5 or 8-10.</p>
+                        </div>
+
+                        <button type="button" class="resize-export-btn" id="splitPdfActionBtn" disabled><i data-lucide="scissors"></i> Split PDF</button>
+                        <p class="resize-export-hint" id="splitPdfActionHint">Add a PDF to enable splitting.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" aria-label="Split PDF workspace">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>PDF File <span class="resize-count" id="splitPdfCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="splitPdfSub">Add a PDF to split its pages.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="splitPdfTotal"></div>
+                    </div>
+
+                    <div class="resize-empty" id="splitPdfEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="scissors"></i></div>
+                        <h4>No PDF yet</h4>
+                        <p>Add a PDF, choose how to split it, and download the resulting files individually or as a ZIP.</p>
+                        <button type="button" class="resize-empty-btn" id="splitPdfEmptyAddBtn"><i data-lucide="file-up"></i> Select PDF</button>
+                        <span>Everything happens on your device</span>
+                    </div>
+
+                    <div class="pdf-doc-list" id="splitPdfDocs" hidden></div>
+
+                    <div class="pdf-results" id="splitPdfResultsSection" hidden>
+                        <div class="pdf-results-head">
+                            <div>
+                                <h4>Split Files <span class="pdf-result-count" id="splitPdfResultCount">0</span></h4>
+                                <p id="splitPdfResultSummary"></p>
+                            </div>
+                            <button type="button" class="pdf-download-all-btn" id="splitPdfDownloadAllBtn" disabled><i data-lucide="archive"></i> Download ZIP</button>
+                        </div>
+                        <div class="pdf-result-grid" id="splitPdfResults" role="list"></div>
+                    </div>
+
+                    <div class="resize-status" id="splitPdfStatus" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+
+            <div class="image-error resize-error" id="splitPdfError" role="alert"></div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> Splitting is performed entirely in your browser with pdf-lib — the PDF never leaves your device. Password-protected inputs prompt for their password locally. Use custom ranges to extract chapters or selected pages into separate PDFs.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="mergePdfTab">
+            <div class="resize-app pdf-app" id="mergePdfApp">
+                <aside class="resize-sidebar" aria-label="Merge PDFs settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="mergePdfAddBtn"><i data-lucide="file-up"></i> Add PDFs</button>
+                        <button type="button" class="resize-clear-all-btn" id="mergePdfClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear All</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="mergePdfDropzone" role="button" tabindex="0" aria-label="Add PDFs to merge">
+                        <i data-lucide="combine"></i>
+                        <div class="resize-dropzone-text"><strong>Drop PDFs here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">Two or more PDFs</div>
+                        <div class="resize-dropzone-limit">Max 100 MB each</div>
+                        <input type="file" id="mergePdfFileInput" accept="application/pdf,.pdf" multiple hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="combine"></i> Merge Settings</h3>
+                        <div class="resize-export-field">
+                            <label for="mergePdfOutputName">Output Name</label>
+                            <input type="text" class="resize-field" id="mergePdfOutputName" value="merged" autocomplete="off">
+                            <p class="resize-field-hint">Saved as <span id="mergePdfOutputNamePreview">merged.pdf</span>.</p>
+                        </div>
+                        <div class="pdf-summary-box" id="mergePdfSummary">
+                            <span>0 files</span>
+                            <strong>0 pages</strong>
+                        </div>
+                        <button type="button" class="resize-export-btn" id="mergePdfActionBtn" disabled><i data-lucide="combine"></i> Merge PDFs</button>
+                        <p class="resize-export-hint" id="mergePdfActionHint">Add at least two PDFs to merge.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" aria-label="Merge PDFs workspace">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>PDF Files <span class="resize-count" id="mergePdfCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="mergePdfSub">Add PDFs, then arrange their order.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="mergePdfTotal"></div>
+                    </div>
+
+                    <div class="resize-empty" id="mergePdfEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="combine"></i></div>
+                        <h4>No PDFs yet</h4>
+                        <p>Add two or more PDFs and use the arrow buttons to set the page order before merging.</p>
+                        <button type="button" class="resize-empty-btn" id="mergePdfEmptyAddBtn"><i data-lucide="file-up"></i> Select PDFs</button>
+                        <span>Up to 20 PDFs · max 100 MB each</span>
+                    </div>
+
+                    <div class="pdf-doc-list" id="mergePdfDocs" hidden></div>
+
+                    <div class="pdf-output" id="mergePdfOutput" hidden>
+                        <div class="pdf-output-icon"><i data-lucide="file-check-2"></i></div>
+                        <div class="pdf-output-body">
+                            <strong id="mergePdfOutputFile">merged.pdf</strong>
+                            <span id="mergePdfOutputMeta"></span>
+                        </div>
+                        <button type="button" class="pdf-output-download" id="mergePdfDownloadBtn"><i data-lucide="download"></i> Download</button>
+                    </div>
+
+                    <div class="resize-status" id="mergePdfStatus" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+
+            <div class="image-error resize-error" id="mergePdfError" role="alert"></div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> PDFs are merged locally with pdf-lib in the order shown — nothing is uploaded. Password-protected files prompt for their passwords in your browser. Use the arrow buttons to move a file up or down before merging.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="watermarkPdfTab">
+            <div class="resize-app pdf-app" id="watermarkPdfApp">
+                <aside class="resize-sidebar" aria-label="Watermark PDF settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="watermarkPdfAddBtn"><i data-lucide="file-up"></i> Add PDF</button>
+                        <button type="button" class="resize-clear-all-btn" id="watermarkPdfClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="watermarkPdfDropzone" role="button" tabindex="0" aria-label="Add a PDF to watermark">
+                        <i data-lucide="stamp"></i>
+                        <div class="resize-dropzone-text"><strong>Drop a PDF here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">PDF files only</div>
+                        <div class="resize-dropzone-limit">Max 100 MB</div>
+                        <input type="file" id="watermarkPdfFileInput" accept="application/pdf,.pdf" hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="stamp"></i> Watermark Settings</h3>
+                        <div class="resize-export-field">
+                            <label for="watermarkPdfText">Watermark Text</label>
+                            <input type="text" class="resize-field" id="watermarkPdfText" value="CONFIDENTIAL" maxlength="80" autocomplete="off">
+                            <p class="resize-field-hint">Use Latin characters for best font compatibility.</p>
+                        </div>
+
+                        <div class="pdf-inline-fields">
+                            <div class="resize-export-field">
+                                <label for="watermarkPdfSize">Font Size</label>
+                                <input type="number" class="resize-field" id="watermarkPdfSize" value="48" min="8" max="240" step="1">
+                            </div>
+                            <div class="resize-export-field">
+                                <label for="watermarkPdfOpacity">Opacity %</label>
+                                <input type="number" class="resize-field" id="watermarkPdfOpacity" value="25" min="5" max="100" step="1">
+                            </div>
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="watermarkPdfRotation">Rotation</label>
+                            <select class="resize-field" id="watermarkPdfRotation">
+                                <option value="45" selected>Diagonal — 45°</option>
+                                <option value="0">Horizontal — 0°</option>
+                                <option value="90">Vertical — 90°</option>
+                                <option value="-45">Diagonal — -45°</option>
+                            </select>
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="watermarkPdfColor">Color</label>
+                            <input type="color" class="resize-field pdf-color-field" id="watermarkPdfColor" value="#ef4444">
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="watermarkPdfRange">Page Range</label>
+                            <input type="text" class="resize-field" id="watermarkPdfRange" placeholder="All pages" autocomplete="off">
+                        </div>
+
+                        <button type="button" class="resize-export-btn" id="watermarkPdfApplyBtn" disabled><i data-lucide="stamp"></i> Apply Watermark</button>
+                        <p class="resize-export-hint" id="watermarkPdfHint">Add a PDF to enable watermarking.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" aria-label="Watermark PDF workspace">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>PDF File <span class="resize-count" id="watermarkPdfCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="watermarkPdfSub">Add a PDF to stamp a text watermark.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="watermarkPdfTotal"></div>
+                    </div>
+
+                    <div class="resize-empty" id="watermarkPdfEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="stamp"></i></div>
+                        <h4>No PDF yet</h4>
+                        <p>Add a PDF and stamp a visible text watermark across its pages. The original file is never modified.</p>
+                        <button type="button" class="resize-empty-btn" id="watermarkPdfEmptyAddBtn"><i data-lucide="file-up"></i> Select PDF</button>
+                        <span>Watermarks are visual only</span>
+                    </div>
+
+                    <div class="pdf-doc-list" id="watermarkPdfDocs" hidden></div>
+
+                    <div class="pdf-output" id="watermarkPdfOutput" hidden>
+                        <div class="pdf-output-icon"><i data-lucide="file-check-2"></i></div>
+                        <div class="pdf-output-body">
+                            <strong id="watermarkPdfOutputName">watermarked.pdf</strong>
+                            <span id="watermarkPdfOutputMeta"></span>
+                        </div>
+                        <button type="button" class="pdf-output-download" id="watermarkPdfDownloadBtn"><i data-lucide="download"></i> Download</button>
+                    </div>
+
+                    <div class="resize-status" id="watermarkPdfStatus" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+
+            <div class="image-error resize-error" id="watermarkPdfError" role="alert"></div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> Watermarks are drawn with pdf-lib directly in your browser — the PDF is never uploaded. Watermarks are visual overlays, not digital rights management. Standard PDF fonts support Latin characters; decorative scripts and some symbols may not render.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="protectPdfTab">
+            <div class="resize-app pdf-app" id="protectPdfApp">
+                <aside class="resize-sidebar" aria-label="Protect PDF settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="protectPdfAddBtn"><i data-lucide="file-up"></i> Add PDF</button>
+                        <button type="button" class="resize-clear-all-btn" id="protectPdfClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="protectPdfDropzone" role="button" tabindex="0" aria-label="Add a PDF to protect">
+                        <i data-lucide="lock-keyhole"></i>
+                        <div class="resize-dropzone-text"><strong>Drop a PDF here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">PDF files only</div>
+                        <div class="resize-dropzone-limit">Max 100 MB</div>
+                        <input type="file" id="protectPdfFileInput" accept="application/pdf,.pdf" hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="lock-keyhole"></i> Password &amp; Permissions</h3>
+                        <div class="resize-export-field">
+                            <label for="protectPdfPassword">Open Password</label>
+                            <input type="password" class="resize-field" id="protectPdfPassword" autocomplete="new-password" spellcheck="false" placeholder="Required">
+                            <p class="resize-field-hint">Required to open the protected PDF. Use at least 8 characters.</p>
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="protectPdfConfirm">Confirm Password</label>
+                            <input type="password" class="resize-field" id="protectPdfConfirm" autocomplete="new-password" spellcheck="false" placeholder="Repeat password">
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="protectPdfOwner">Owner Password <span class="resize-optional">(optional)</span></label>
+                            <input type="password" class="resize-field" id="protectPdfOwner" autocomplete="new-password" spellcheck="false" placeholder="Defaults to the open password">
+                        </div>
+
+                        <label class="resize-check-row"><input type="checkbox" id="protectPdfAllowPrinting" checked> Allow printing</label>
+                        <label class="resize-check-row"><input type="checkbox" id="protectPdfAllowCopying"> Allow copying text</label>
+                        <label class="resize-check-row"><input type="checkbox" id="protectPdfAllowModifying"> Allow editing</label>
+
+                        <button type="button" class="resize-export-btn" id="protectPdfApplyBtn" disabled><i data-lucide="lock-keyhole"></i> Protect PDF</button>
+                        <p class="resize-export-hint" id="protectPdfHint">Add a PDF to enable protection.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" aria-label="Protect PDF workspace">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>PDF File <span class="resize-count" id="protectPdfCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="protectPdfSub">Add a PDF to encrypt it.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="protectPdfTotal"></div>
+                    </div>
+
+                    <div class="resize-empty" id="protectPdfEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="lock-keyhole"></i></div>
+                        <h4>No PDF yet</h4>
+                        <p>Add a PDF to encrypt it with AES-256 and choose what readers are allowed to do.</p>
+                        <button type="button" class="resize-empty-btn" id="protectPdfEmptyAddBtn"><i data-lucide="file-up"></i> Select PDF</button>
+                        <span>Passwords are never stored or uploaded</span>
+                    </div>
+
+                    <div class="pdf-doc-list" id="protectPdfDocs" hidden></div>
+
+                    <div class="pdf-output" id="protectPdfOutput" hidden>
+                        <div class="pdf-output-icon"><i data-lucide="lock-keyhole"></i></div>
+                        <div class="pdf-output-body">
+                            <strong id="protectPdfOutputName">protected.pdf</strong>
+                            <span id="protectPdfOutputMeta"></span>
+                        </div>
+                        <button type="button" class="pdf-output-download" id="protectPdfDownloadBtn"><i data-lucide="download"></i> Download</button>
+                    </div>
+
+                    <div class="resize-status" id="protectPdfStatus" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+
+            <div class="image-error resize-error" id="protectPdfError" role="alert"></div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> Encryption uses AES-256 and happens entirely in your browser with pdf-lib — your file and password never leave your device. There is no password recovery: keep the password safe. Some PDF readers may ignore permission flags even when encryption is applied.</p>
+            </div>
+        </div>
+
             <footer class="footer">
                 <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a> · Secure Tools runs entirely in your browser.</p>
             </footer>
@@ -959,8 +1384,9 @@
         })();
     </script>
     <script src="assets/js/image-preview.js?v=1"></script>
-    <script src="assets/js/script.js?v=21"></script>
-    <script src="assets/js/pdf-tool.js?v=18"></script>
+    <script src="assets/js/script.js?v=22"></script>
+    <script src="assets/js/pdf-tool.js?v=19"></script>
+    <script src="assets/js/pdf-extra-tools.js?v=1"></script>
 </body>
 
 </html>

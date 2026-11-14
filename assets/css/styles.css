@@ -3191,6 +3191,65 @@ select.resize-field optgroup {
     height: 13px;
 }
 
+.pdf-inline-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.pdf-inline-fields .resize-export-field {
+    min-width: 0;
+}
+
+.pdf-color-field {
+    height: 39px;
+    padding: 4px;
+    cursor: pointer;
+}
+
+.pdf-color-field::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.pdf-color-field::-webkit-color-swatch {
+    border: 0;
+    border-radius: 5px;
+}
+
+.pdf-result-card.pdf-file-result {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 11px;
+}
+
+.pdf-file-result .pdf-result-body {
+    flex: 1;
+    padding: 0;
+}
+
+.pdf-file-result .pdf-result-download {
+    position: static;
+    flex-shrink: 0;
+}
+
+.pdf-result-file-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    border-radius: 9px;
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--primary);
+}
+
+.pdf-result-file-icon .lucide {
+    width: 16px;
+    height: 16px;
+}
+
 .pdf-modal {
     position: fixed;
     inset: 0;

@@ -3,7 +3,7 @@
     'use strict';
 
     const PDFJS_BASE = 'assets/vendor/pdfjs/';
-    const PDFLIB_SRC = 'assets/vendor/pdf-lib/pdf-lib.min.js';
+    const PDFLIB_SRC = 'assets/vendor/pdf-lib/pdf-lib.min.js?v=2.11.1';
 
     const MAX_PDF_FILES = 10;
     const MAX_PDF_BYTES = 100 * 1024 * 1024;

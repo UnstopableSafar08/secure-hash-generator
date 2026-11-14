@@ -38,7 +38,12 @@ const TOOLS = {
     image: { title: 'Image Base64', desc: 'Convert images to Base64 data URLs and decode Base64 back into images.' },
     resize: { title: 'Image Resizer', desc: 'Bulk resize, crop and convert images locally with size, percentage and social presets.' },
     pdfToImages: { title: 'PDF to Images', desc: 'Render PDF pages or extract embedded images as JPG, PNG or WebP.' },
-    imagesToPdf: { title: 'Images to PDF', desc: 'Combine JPG, PNG, WebP, GIF, BMP or AVIF images into one PDF.' }
+    pdfToWord: { title: 'PDF to Word', desc: 'Extract selectable PDF text into an editable Word (DOCX) document.' },
+    imagesToPdf: { title: 'Images to PDF', desc: 'Combine JPG, PNG, WebP, GIF, BMP or AVIF images into one PDF.' },
+    splitPdf: { title: 'Split PDF', desc: 'Split a PDF into single pages, chunks or custom page ranges.' },
+    mergePdf: { title: 'Merge PDFs', desc: 'Combine multiple PDFs into one document in your chosen order.' },
+    watermarkPdf: { title: 'Watermark PDF', desc: 'Stamp a visible text watermark across selected PDF pages.' },
+    protectPdf: { title: 'Protect PDF', desc: 'Encrypt a PDF with an AES-256 password and set reader permissions.' }
 };
 
 function currentToolFromHash() {
