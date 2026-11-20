@@ -1310,6 +1310,7 @@ copyAllStringsBtn.addEventListener('click', async () => {
     const encodeOutputLabel = document.getElementById('imageEncodeOutputLabel');
     const dataUrlCheckbox = document.getElementById('imageDataUrl');
     const encodeCopyBtn = document.getElementById('imageEncodeCopyBtn');
+    const encodeMarkdownBtn = document.getElementById('imageEncodeMarkdownBtn');
     const encodeDownloadBtn = document.getElementById('imageEncodeDownloadBtn');
     const encodeClearBtn = document.getElementById('imageEncodeClearBtn');
     const decodeInput = document.getElementById('imageDecodeInput');
@@ -1377,6 +1378,35 @@ copyAllStringsBtn.addEventListener('click', async () => {
         const out = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
         return out;
+    }
+
+    // Ensure the data URL declares an image MIME type. FileReader falls back to
+    // application/octet-stream when a file has no type, which would not render
+    // inside Markdown image syntax.
+    function toImageDataUrl(dataUrl) {
+        if (!dataUrl) return '';
+        const match = /^data:([^;,]*)/.exec(dataUrl);
+        const mime = match ? match[1] : '';
+        if (/^image\//.test(mime)) return dataUrl;
+
+        const comma = dataUrl.indexOf(',');
+        if (comma === -1) return dataUrl;
+        const payload = dataUrl.slice(comma + 1);
+        const head = base64ToBytes(payload.slice(0, 64));
+        let sniffed = sniffImageMime(head);
+        if (!sniffed) {
+            const text = String.fromCharCode.apply(null, head).trim().toLowerCase();
+            if (text.indexOf('<svg') !== -1 || text.indexOf('<?xml') === 0) sniffed = 'image/svg+xml';
+        }
+        if (!sniffed) sniffed = /^image\//.test(currentFileType) ? currentFileType : 'image/png';
+        return 'data:' + sniffed + ';base64,' + payload;
+    }
+
+    function markdownAltText() {
+        return (currentBaseName || 'image')
+            .replace(/[\\[\]]/g, '\\$&')
+            .replace(/\s+/g, ' ')
+            .trim() || 'image';
     }
 
     function loadPreview(img, src, ok, fail) {
@@ -1499,6 +1529,18 @@ copyAllStringsBtn.addEventListener('click', async () => {
             setTimeout(() => setBtn(encodeCopyBtn, 'copy', 'Copy'), 2000);
         } catch (error) {
             console.error('Failed to copy:', error);
+        }
+    });
+
+    encodeMarkdownBtn.addEventListener('click', async () => {
+        if (!currentDataUrl) return;
+        const markdown = '![' + markdownAltText() + '](' + toImageDataUrl(currentDataUrl) + ')';
+        try {
+            await navigator.clipboard.writeText(markdown);
+            setBtn(encodeMarkdownBtn, 'check', 'Copied!');
+            setTimeout(() => setBtn(encodeMarkdownBtn, 'clipboard-copy', 'Copy Markdown'), 2000);
+        } catch (error) {
+            console.error('Failed to copy Markdown:', error);
         }
     });
 
