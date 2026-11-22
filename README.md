@@ -77,7 +77,7 @@ A modern, local-first web application for generating hashes, passwords, random s
 - Resize modes: **By Size** (with optional aspect-ratio locking), **As Percentage**, and **Social Media**
 - Social presets for Instagram, Facebook, X, YouTube, LinkedIn, TikTok, Pinterest, and WhatsApp with center cropping
 - Export as JPG, PNG, or WebP with quality control
-- Optional JPG target file size in KB, reached automatically with a quality search
+- Optional JPG target file size in KB, reached automatically by adjusting JPEG quality and, when needed, output resolution
 - Single images download directly; multiple images export as a ZIP archive
 - Remove individual images or clear the whole batch
 - All resizing is performed locally with the canvas API — no uploads

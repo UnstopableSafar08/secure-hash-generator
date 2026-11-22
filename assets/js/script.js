@@ -1944,8 +1944,11 @@ copyAllStringsBtn.addEventListener('click', async () => {
     function cardHtml(item) {
         const settings = currentResolved || resolveSettings();
         const target = computeTarget(item, settings);
-        const newDimensions = target
-            ? target.width.toLocaleString() + ' × ' + target.height.toLocaleString()
+        const displayTarget = item.status === 'ready' && item.outputWidth && item.outputHeight
+            ? { width: item.outputWidth, height: item.outputHeight }
+            : target;
+        const newDimensions = displayTarget
+            ? displayTarget.width.toLocaleString() + ' × ' + displayTarget.height.toLocaleString()
             : '—';
         const originalDimensions = item.image
             ? item.width.toLocaleString() + ' × ' + item.height.toLocaleString()
@@ -1992,6 +1995,9 @@ copyAllStringsBtn.addEventListener('click', async () => {
 
         const settings = currentResolved || resolveSettings();
         const target = computeTarget(item, settings);
+        const displayTarget = item.status === 'ready' && item.outputWidth && item.outputHeight
+            ? { width: item.outputWidth, height: item.outputHeight }
+            : target;
         const status = statusInfo(item);
         const thumbUrl = item.outputUrl || item.sourceUrl;
         const preview = card.querySelector('.resize-card-preview img');
@@ -2020,8 +2026,8 @@ copyAllStringsBtn.addEventListener('click', async () => {
                 : '—';
         }
         if (dimensions) {
-            dimensions.textContent = target
-                ? target.width.toLocaleString() + ' × ' + target.height.toLocaleString()
+            dimensions.textContent = displayTarget
+                ? displayTarget.width.toLocaleString() + ' × ' + displayTarget.height.toLocaleString()
                 : '—';
         }
         if (size) {
@@ -2034,7 +2040,11 @@ copyAllStringsBtn.addEventListener('click', async () => {
             statusElCard.className = 'resize-card-status ' + status.className;
             statusElCard.textContent = status.text;
             statusElCard.title = item.error ||
-                (item.targetMissed ? 'The target size could not be reached even at the lowest quality.' : '');
+                (item.targetMissed
+                    ? 'The target size could not be reached even at the lowest quality and reduced dimensions.'
+                    : item.targetScaled
+                        ? 'Dimensions were reduced to meet the target file size.'
+                        : '');
         }
         if (download) {
             download.disabled = !(item.status === 'ready' && item.outputBlob && !settings.error);
@@ -2163,7 +2173,7 @@ copyAllStringsBtn.addEventListener('click', async () => {
         } else if (settings.targetError) {
             targetHint.textContent = settings.targetError;
         } else if (automaticQuality) {
-            targetHint.textContent = 'Automatic quality will be used to reach ' + formatBytes(settings.targetBytes) + '.';
+            targetHint.textContent = 'Quality and, if needed, dimensions adjust automatically to reach ' + formatBytes(settings.targetBytes) + '.';
         } else {
             targetHint.textContent = 'Optional — leave blank to use the quality slider.';
         }
@@ -2187,6 +2197,8 @@ copyAllStringsBtn.addEventListener('click', async () => {
             items.forEach(item => {
                 if (item.image && item.status !== 'loading' && item.status !== 'processing') {
                     item.status = 'invalid';
+                    item.targetMissed = false;
+                    item.targetScaled = false;
                     updateCard(item);
                 }
             });
@@ -2195,6 +2207,8 @@ copyAllStringsBtn.addEventListener('click', async () => {
                 if (item.image && item.status !== 'loading' && item.status !== 'processing') {
                     item.status = 'idle';
                     item.error = '';
+                    item.targetMissed = false;
+                    item.targetScaled = false;
                     updateCard(item);
                 }
             });
@@ -2237,16 +2251,50 @@ copyAllStringsBtn.addEventListener('click', async () => {
         });
     }
 
-    async function encodeJpegToTarget(canvas, targetBytes, isCurrent) {
-        let low = 0.1;
-        let high = 0.92;
-        let best = null;
+    function drawToCanvas(canvas, width, height, item, settings) {
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            throw new Error('This image is too large to resize in your browser.');
+        }
 
-        let blob = await canvasToBlob(canvas, 'image/jpeg', high, isCurrent);
+        if (settings.format === 'image/jpeg') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+        }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        if (settings.mode === 'social') {
+            drawSocialCrop(ctx, item.image, width, height);
+        } else {
+            ctx.drawImage(item.image, 0, 0, width, height);
+        }
+    }
+
+    async function searchJpegQuality(canvas, targetBytes, isCurrent) {
+        // Canvas JPEG encoders keep reducing the quantization tables below
+        // quality 0.1, reaching the smallest tables around 0.01. A 0.1 floor
+        // made it impossible to hit small targets for large, detailed scans.
+        const minQuality = 0.01;
+        const maxQuality = 0.92;
+
+        let blob = await canvasToBlob(canvas, 'image/jpeg', maxQuality, isCurrent);
         if (!blob) return null;
         if (blob.size <= targetBytes) {
-            return { blob: blob, quality: Math.round(high * 100), met: true };
+            return { blob: blob, quality: Math.round(maxQuality * 100), met: true };
         }
+
+        const floorBlob = await canvasToBlob(canvas, 'image/jpeg', minQuality, isCurrent);
+        if (!floorBlob) return null;
+        if (floorBlob.size > targetBytes) {
+            return { blob: floorBlob, quality: Math.round(minQuality * 100), met: false };
+        }
+
+        let best = { blob: floorBlob, quality: Math.round(minQuality * 100) };
+        let low = minQuality;
+        let high = maxQuality;
 
         for (let i = 0; i < 7; i++) {
             if (!isCurrent()) return null;
@@ -2261,18 +2309,50 @@ copyAllStringsBtn.addEventListener('click', async () => {
             }
         }
 
-        if (!best) {
-            blob = await canvasToBlob(canvas, 'image/jpeg', low, isCurrent);
-            if (blob) {
-                best = { blob: blob, quality: Math.round(low * 100) };
+        return { blob: best.blob, quality: best.quality, met: true };
+    }
+
+    async function encodeJpegToTarget(canvas, targetBytes, isCurrent, redraw) {
+        const MAX_PASSES = 5;
+        let result = null;
+
+        for (let pass = 0; pass < MAX_PASSES; pass++) {
+            result = await searchJpegQuality(canvas, targetBytes, isCurrent);
+            if (!result) return null;
+
+            if (result.met) {
+                return {
+                    blob: result.blob,
+                    quality: result.quality,
+                    met: true,
+                    width: canvas.width,
+                    height: canvas.height
+                };
             }
+
+            if (pass === MAX_PASSES - 1) break;
+
+            // Even the lowest quality is over the target. Estimate how much
+            // smaller the image needs to be and try again at that size.
+            const ratio = Math.sqrt(targetBytes / result.blob.size);
+            if (!Number.isFinite(ratio)) break;
+
+            const scale = Math.max(0.35, Math.min(0.95, ratio * 0.97));
+            const nextWidth = Math.max(1, Math.floor(canvas.width * scale));
+            const nextHeight = Math.max(1, Math.floor(canvas.height * scale));
+            if (nextWidth === canvas.width && nextHeight === canvas.height) break;
+            if (!isCurrent()) return null;
+
+            redraw(nextWidth, nextHeight);
         }
 
-        if (!best) return null;
+        if (!result) return null;
         return {
-            blob: best.blob,
-            quality: best.quality,
-            met: best.blob.size <= targetBytes
+            blob: result.blob,
+            quality: result.quality,
+            met: false,
+            width: canvas.width,
+            height: canvas.height
         };
     }
 
@@ -2306,37 +2386,28 @@ copyAllStringsBtn.addEventListener('click', async () => {
         if (!isCurrent() || !items.includes(item)) return null;
 
         const canvas = document.createElement('canvas');
-        canvas.width = target.width;
-        canvas.height = target.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            throw new Error('This image is too large to resize in your browser.');
-        }
-
-        if (settings.format === 'image/jpeg') {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, target.width, target.height);
-        }
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-
-        if (settings.mode === 'social') {
-            drawSocialCrop(ctx, item.image, target.width, target.height);
-        } else {
-            ctx.drawImage(item.image, 0, 0, target.width, target.height);
-        }
+        drawToCanvas(canvas, target.width, target.height, item, settings);
 
         let blob = null;
         let qualityUsed = settings.quality;
         let targetMissed = false;
+        let outputWidth = target.width;
+        let outputHeight = target.height;
 
         if (settings.format === 'image/jpeg' && settings.targetBytes) {
-            const result = await encodeJpegToTarget(canvas, settings.targetBytes, isCurrent);
+            const result = await encodeJpegToTarget(
+                canvas,
+                settings.targetBytes,
+                isCurrent,
+                (width, height) => drawToCanvas(canvas, width, height, item, settings)
+            );
             if (!result) return null;
             if (!isCurrent() || !items.includes(item)) return null;
             blob = result.blob;
             qualityUsed = result.quality;
             targetMissed = !result.met;
+            outputWidth = result.width;
+            outputHeight = result.height;
         } else {
             blob = await canvasToBlob(
                 canvas,
@@ -2352,10 +2423,11 @@ copyAllStringsBtn.addEventListener('click', async () => {
         item.outputBlob = blob;
         item.outputMime = blob.type || settings.format;
         item.outputQuality = qualityUsed;
-        item.outputWidth = target.width;
-        item.outputHeight = target.height;
+        item.outputWidth = outputWidth;
+        item.outputHeight = outputHeight;
         item.outputUrl = URL.createObjectURL(blob);
         item.targetMissed = targetMissed;
+        item.targetScaled = outputWidth < target.width || outputHeight < target.height;
         item.status = 'ready';
         item.error = '';
         item.signature = makeSignature(settings);
@@ -2416,6 +2488,8 @@ copyAllStringsBtn.addEventListener('click', async () => {
         pending.forEach(item => {
             item.status = 'processing';
             item.error = '';
+            item.targetMissed = false;
+            item.targetScaled = false;
             updateCard(item);
         });
         updateSummary();
@@ -2486,7 +2560,8 @@ copyAllStringsBtn.addEventListener('click', async () => {
             status: 'loading',
             error: '',
             signature: '',
-            targetMissed: false
+            targetMissed: false,
+            targetScaled: false
         };
 
         items.push(item);
