@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Tools — Hash, Password, Bcrypt, Base64, Case Converter, Image Resizer, PDF Tools &amp; Char Count</title>
-    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder, case converter, image resizer, PDF to image converter, image to PDF converter and character counter. All processing happens locally in your browser — no data leaves your device.">
+    <title>Secure Tools — Hash, Password, Bcrypt, Base64, SSL Checker, Case Converter, Image Resizer &amp; PDF Tools</title>
+    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder, SSL certificate checker, case converter, image resizer, PDF to image converter, image to PDF converter and character counter. Files and local tools stay in your browser; live SSL checks send only the domain and port.">
     <meta name="theme-color" content="#0f172a">
     <meta property="og:title" content="Secure Tools">
-    <meta property="og:description" content="Hash, password, bcrypt, Base64, case-conversion, image resizing, PDF conversion and char-count utilities that run 100% locally in your browser.">
+    <meta property="og:description" content="Hash, password, bcrypt, Base64, SSL checker, case-conversion, image resizing, PDF conversion and char-count utilities. Files stay local; live SSL checks send only the domain and port.">
     <meta property="og:type" content="website">
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
@@ -19,6 +19,7 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css?v=22">
+    <link rel="stylesheet" href="assets/css/ssl-checker.css?v=1">
     <script src="assets/js/lucide.min.js?v=1.58.0"></script>
 </head>
 
@@ -30,7 +31,7 @@
                 <i data-lucide="shield-check" class="brand-icon"></i>
                 <div>
                     <div class="brand-name">Secure Tools</div>
-                    <div class="brand-tag">100% client-side</div>
+                    <div class="brand-tag">Local-first tools</div>
                 </div>
             </div>
 
@@ -143,10 +144,24 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="nav-group is-collapsed" data-group="ssl">
+                    <button type="button" class="nav-group-toggle" aria-expanded="false" aria-controls="navGroupSsl">
+                        <i data-lucide="shield-check"></i>
+                        <span class="nav-group-label">SSL</span>
+                        <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+                    </button>
+                    <div class="nav-group-items" id="navGroupSsl">
+                        <button class="nav-btn" data-tool="ssl">
+                            <i data-lucide="lock"></i>
+                            <span class="nav-text"><span class="nav-label">SSL Checker</span><span class="nav-desc">Inspect certs &amp; live domains</span></span>
+                        </button>
+                    </div>
+                </div>
             </nav>
 
             <div class="sidebar-footer">
-                <div class="trust-badge"><i data-lucide="lock"></i> No data leaves your browser</div>
+                <div class="trust-badge"><i data-lucide="lock"></i> Files never leave your browser</div>
                 <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a></p>
             </div>
         </aside>
@@ -1351,8 +1366,107 @@
             </div>
         </div>
 
+        <div class="tab-content" id="sslTab">
+            <section id="ssl-checker-section">
+                <p class="checker-intro">Inspect a certificate locally from a file or PEM, or check a live domain and
+                    port. Local inspection never leaves your browser. Live checks try the self-hosted TLS API first and
+                    fall back to the free Cert Spotter Certificate Transparency API. The API used for every online check
+                    is shown with the result.</p>
+
+                <div class="checker-grid">
+                    <div class="checker-card">
+                        <h3>Live domain check</h3>
+                        <form id="ssl-live-form" novalidate>
+                            <div class="checker-field-row">
+                                <div class="checker-field">
+                                    <label for="ssl-live-host">Domain or IP</label>
+                                    <input type="text" id="ssl-live-host" placeholder="example.com"
+                                        autocomplete="off" spellcheck="false">
+                                </div>
+                                <div class="checker-field checker-field-port">
+                                    <label for="ssl-live-port">Port</label>
+                                    <input type="number" id="ssl-live-port" value="443" min="1" max="65535"
+                                        inputmode="numeric">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="ssl-live-btn">Check Live SSL</button>
+                        </form>
+                        <p class="checker-note ssl-api-note is-info" id="ssl-api-note">Online lookups use the
+                            self-hosted TLS API when available, otherwise the free Cert Spotter CT API. The API used is
+                            shown with each result.</p>
+                    </div>
+
+                    <div class="checker-card">
+                        <h3>Inspect certificate file</h3>
+                        <form id="ssl-inspect-form" novalidate>
+                            <div class="checker-field">
+                                <label for="ssl-cert-file">Certificate file(s)</label>
+                                <input type="file" id="ssl-cert-file"
+                                    accept=".pem,.crt,.cer,.der,.txt,application/x-pem-file,application/x-x509-ca-cert"
+                                    multiple>
+                                <small>Leaf first, then intermediates and root. PEM or DER X.509 certificates.</small>
+                            </div>
+                            <div class="checker-field">
+                                <label for="ssl-cert-pem">Or paste PEM / chain</label>
+                                <textarea id="ssl-cert-pem" rows="6"
+                                    placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"></textarea>
+                            </div>
+                            <div class="checker-field">
+                                <label for="ssl-hostname-check">Hostname to verify <span
+                                        class="optional">(optional)</span></label>
+                                <input type="text" id="ssl-hostname-check" placeholder="www.example.com"
+                                    autocomplete="off" spellcheck="false">
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="ssl-inspect-btn">Inspect
+                                Certificate</button>
+                        </form>
+                        <p class="checker-note">Certificate files and PEM content are parsed entirely in your browser.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="checker-error ssl-hidden" id="ssl-checker-error" role="alert"></div>
+
+                <div id="ssl-results" class="ssl-results ssl-hidden" aria-live="polite">
+                    <div class="ssl-result-header">
+                        <div>
+                            <h3 id="ssl-result-title">Certificate details</h3>
+                            <p class="ssl-result-sub" id="ssl-result-sub"></p>
+                        </div>
+                        <div class="ssl-badges" id="ssl-badges"></div>
+                    </div>
+
+                    <div class="ssl-source" id="ssl-source"></div>
+                    <div class="ssl-warnings ssl-hidden" id="ssl-warnings"></div>
+
+                    <h4>Certificate Information</h4>
+                    <div class="ssl-info" id="ssl-info"></div>
+
+                    <h4>Certificate Chain</h4>
+                    <div class="ssl-chain" id="ssl-chain"></div>
+
+                    <h4>Certificate PEM</h4>
+                    <pre class="ssl-pem" id="ssl-pem"></pre>
+
+                    <div class="output-actions">
+                        <button type="button" class="btn btn-secondary" id="ssl-copy-pem">Copy PEM</button>
+                        <button type="button" class="btn btn-secondary" id="ssl-copy-chain">Copy full chain</button>
+                        <button type="button" class="btn btn-secondary" id="ssl-download-pem">Download .pem</button>
+                        <button type="button" class="btn btn-secondary" id="ssl-clear">Clear</button>
+                    </div>
+                </div>
+
+                <div class="info">
+                    <p><strong>Privacy:</strong> Certificate inspection runs locally with PKI.js. Online checks send
+                        only the requested domain and port to the selected API. The free fallback uses Certificate
+                        Transparency data, which is not a live handshake and cannot prove the certificate currently
+                        served by the host.</p>
+                </div>
+            </section>
+        </div>
+
             <footer class="footer">
-                <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a> · Secure Tools runs entirely in your browser.</p>
+                <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a> · Local-first tools; live SSL checks send only the domain and port.</p>
             </footer>
         </main>
     </div>
@@ -1361,7 +1475,7 @@
         // Register offline service worker (http(s) only; skipped on file://)
         if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('./sw.js').catch(function() {});
+                navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(function() {});
             });
         }
     </script>
@@ -1385,7 +1499,9 @@
         })();
     </script>
     <script src="assets/js/image-preview.js?v=1"></script>
-    <script src="assets/js/script.js?v=23"></script>
+    <script src="assets/vendor/pkijs.browser.js?v=3.0.5"></script>
+    <script src="assets/js/ssl-checker.js?v=1"></script>
+    <script src="assets/js/script.js?v=25"></script>
     <script src="assets/js/pdf-tool.js?v=19"></script>
     <script src="assets/js/pdf-extra-tools.js?v=1"></script>
 </body>

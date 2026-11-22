@@ -32,6 +32,7 @@ const TOOLS = {
     password: { title: 'Password Generator', desc: 'Create strong, cryptographically secure passwords with custom rules.' },
     random: { title: 'Random Strings', desc: 'Generate batches of random strings for API keys, tokens and IDs.' },
     bcrypt: { title: 'Bcrypt', desc: 'Hash passwords with bcrypt and verify hashes against plain text.' },
+    ssl: { title: 'SSL Checker', desc: 'Inspect certificates locally or check a live domain, port and TLS chain.' },
     base64: { title: 'Base64 Tool', desc: 'Encode and decode Base64 in realtime, including URL-safe output.' },
     charCount: { title: 'Char Count', desc: 'Count characters, words, lines and inspect character frequency.' },
     case: { title: 'Convert Case', desc: 'Convert text between upper, lower, title, sentence and code cases.' },
@@ -122,15 +123,18 @@ function renderRoute() {
     if (toolDesc) toolDesc.textContent = TOOLS[id].desc;
     document.title = TOOLS[id].title + ' · Secure Tools';
 
+    // Keep the active category open and close the rest, so only one
+    // category ever shows its tools. Run this on the first render as well,
+    // otherwise a deep link such as #/ssl selects the tool but leaves its
+    // sidebar item hidden inside a collapsed category.
+    const activeGroup = [...navGroups].find(group => group.classList.contains('has-active'));
+    if (activeGroup) {
+        navGroups.forEach(group => setGroupExpanded(group, group === activeGroup));
+    }
+
     if (firstRender) {
         firstRender = false;
     } else {
-        // Keep the active category open and close the rest, so only one
-        // category ever shows its tools.
-        const activeGroup = [...navGroups].find(group => group.classList.contains('has-active'));
-        if (activeGroup) {
-            navGroups.forEach(group => setGroupExpanded(group, group === activeGroup));
-        }
         revealActiveTool();
     }
 }

@@ -1,6 +1,6 @@
 # Secure Tools
 
-A modern, secure web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, converting and editing PDFs, and counting characters. All operations are performed locally in your browser using the Web Crypto API and client-side JavaScript libraries - no data is sent to any server.
+A modern, local-first web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, converting and editing PDFs, counting characters, and inspecting SSL/TLS certificates. File-based tools and local certificate inspection run entirely in your browser using the Web Crypto API and client-side JavaScript libraries. Live SSL checks send only the requested hostname and port to a small optional Node.js endpoint, with a free Certificate Transparency fallback.
 
 ## Features
 
@@ -37,6 +37,16 @@ A modern, secure web application for generating hashes, passwords, random string
 - Verify bcrypt hashes against plain text
 - Uses bcryptjs library for client-side bcrypt operations
 - Ideal for password hashing and verification
+
+### 🛡️ SSL Checker
+- Inspect a certificate locally by uploading PEM/DER files or pasting a PEM chain — files never leave the browser
+- Check a live domain or IP on a custom port, with a real TLS handshake through the self-hosted API
+- Full certificate details: subject, SANs, O/OU/L/ST/C, issuer, serial, validity, expiry countdown, signature algorithm, key size/curve, key usage, EKU, basic constraints, and SHA-256 fingerprint
+- Chain view with leaf/intermediate/root ordering, per-link signature verification, CA checks, and expiry warnings
+- Hostname verification with SAN DNS, wildcard, IP SAN, and CN fallback support
+- Self-hosted API fallback to the free Cert Spotter Certificate Transparency API when the backend is unavailable
+- Every online result states which API was used and whether it was a live TLS handshake or CT data
+- The standalone generator + checker remains available at `ssl-generator/certs_generations.html`
 
 ### ↔️ Base64 Tool
 - Realtime Base64 encode/decode (UTF-8 safe, incl. emoji)
@@ -142,9 +152,10 @@ A modern, secure web application for generating hashes, passwords, random string
 
 ## Security
 
-- All operations performed locally in your browser
+- File-based tools and local certificate inspection run locally in your browser
+- Uploaded and pasted certificates are parsed locally and are never sent to a server
+- Live SSL checks send only the requested hostname and port to the self-hosted TLS API or the free Cert Spotter CT API
 - Uses Web Crypto API (`crypto.subtle` and `crypto.getRandomValues`)
-- No data is transmitted to any server
 - SHA-256, SHA-384, and SHA-512 are recommended for security purposes
 - SHA-1 and MD5 are included for compatibility but are considered cryptographically broken
 - Bcrypt is designed to be slow and resistant to brute-force attacks
@@ -161,6 +172,9 @@ A modern, secure web application for generating hashes, passwords, random string
 - **PDF.js** - PDF parsing, page rendering, and image extraction, vendored locally at `assets/vendor/pdfjs/`
 - **pdf-lib** (`@cantoo/pdf-lib` build) - PDF creation, page operations, watermarks, and AES-256 encryption, vendored locally at `assets/vendor/pdf-lib/`
 - **bcryptjs** - Bcrypt hashing library (loaded via CDN)
+- **PKI.js** - X.509 parsing, SAN/key-usage extraction, and signature verification, vendored at `assets/vendor/pkijs.browser.js`
+- **Node.js 20+** - Optional live TLS API in `ssl-generator/server.js` (no npm dependencies)
+- **Cert Spotter CT API** - Free Certificate Transparency fallback for live checks when the backend is unavailable
 
 ## Getting Started
 
@@ -172,7 +186,15 @@ A modern, secure web application for generating hashes, passwords, random string
 
 2. Open `index.html` in your web browser
 
-No build process or dependencies required!
+No build process or dependencies are required for the main tools or for local certificate inspection.
+
+For **live SSL checks**, run the bundled Node.js server (Node 20+, no npm install needed):
+
+```bash
+node ssl-generator/server.js
+```
+
+Then open `http://localhost:8080` and choose **SSL → SSL Checker** in the sidebar (after the PDF category). The server also serves the standalone generator at `http://localhost:8080/ssl-generator/`. On static hosting such as GitHub Pages, live checks automatically use the free Cert Spotter CT fallback; set `window.SSL_CHECKER_API_BASE` to a deployed API URL to enable real TLS handshakes there. Backend configuration and security details are in [`ssl-generator/README.md`](ssl-generator/README.md).
 
 ## File Structure
 
@@ -183,9 +205,11 @@ secure-hash-generator/
 ├── sw.js                   # Service worker (offline app-shell cache)
 ├── assets/
 │   ├── css/
-│   │   └── styles.css      # All styling
+│   │   ├── styles.css          # Core app styling
+│   │   └── ssl-checker.css     # SSL Checker styling (scoped to #sslTab)
 │   ├── js/
 │   │   ├── script.js           # Core tool logic + hash router
+│   │   ├── ssl-checker.js      # Local inspection + live/CT checks
 │   │   ├── pdf-tool.js         # PDF to images + images to PDF logic
 │   │   ├── pdf-extra-tools.js  # PDF to Word, split, merge, watermark, protect
 │   │   └── lucide.min.js       # Lucide icons, vendored (no CDN)
@@ -194,7 +218,13 @@ secure-hash-generator/
 │   │   └── favicon.ico     # Browser favicon
 │   └── vendor/
 │       ├── pdfjs/          # PDF.js build, worker, cmaps, standard fonts
-│       └── pdf-lib/        # pdf-lib UMD build
+│       ├── pdf-lib/        # pdf-lib UMD build
+│       └── pkijs.browser.js # X.509 parser/signature verification bundle
+├── ssl-generator/
+│   ├── certs_generations.html  # Standalone certificate generator + checker
+│   ├── server.js               # Static server + self-hosted /api/check TLS endpoint
+│   ├── assets/                 # Standalone generator/checker assets
+│   └── README.md               # Backend and standalone app documentation
 ├── README.md               # This file
 └── .gitignore              # Git ignore rules
 ```
@@ -202,7 +232,7 @@ secure-hash-generator/
 ## Navigation
 
 The sidebar lists all tools. Every tool is deep-linkable via hash routes
-(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`, `#/pdfToImages`, `#/pdfToWord`, `#/imagesToPdf`, `#/splitPdf`, `#/mergePdf`, `#/watermarkPdf`, `#/protectPdf`),
+(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/ssl`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`, `#/pdfToImages`, `#/pdfToWord`, `#/imagesToPdf`, `#/splitPdf`, `#/mergePdf`, `#/watermarkPdf`, `#/protectPdf`),
 so bookmarks and back/forward buttons work. The sidebar search filters the
 tool list, and the layout collapses to a top nav on small screens.
 
