@@ -44,7 +44,9 @@ const TOOLS = {
     splitPdf: { title: 'Split PDF', desc: 'Split a PDF into single pages, chunks or custom page ranges.' },
     mergePdf: { title: 'Merge PDFs', desc: 'Combine multiple PDFs into one document in your chosen order.' },
     watermarkPdf: { title: 'Watermark PDF', desc: 'Stamp a visible text watermark across selected PDF pages.' },
-    protectPdf: { title: 'Protect PDF', desc: 'Encrypt a PDF with an AES-256 password and set reader permissions.' }
+    protectPdf: { title: 'Protect PDF', desc: 'Encrypt a PDF with an AES-256 password and set reader permissions.' },
+    compressPdf: { title: 'Compress PDF', desc: 'Shrink a PDF toward a target file size, entirely in your browser.' },
+    resizePdf: { title: 'Resize PDF', desc: 'Change PDF page size and scale content to fit A4, Letter, or custom dimensions.' }
 };
 
 function currentToolFromHash() {

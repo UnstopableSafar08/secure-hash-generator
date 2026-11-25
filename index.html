@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Tools — Hash, Password, Bcrypt, Base64, SSL Checker, Case Converter, Image Resizer &amp; PDF Tools</title>
-    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder, SSL certificate checker, case converter, image resizer, PDF to image converter, image to PDF converter and character counter. Files and local tools stay in your browser; live SSL checks send only the domain and port.">
+    <meta name="description" content="Secure Tools: free client-side hash generator, password generator, random strings, bcrypt hashing, Base64 encoder, SSL certificate checker, case converter, image resizer, PDF to image converter, image to PDF converter, PDF resizer, PDF compressor and character counter. Files and local tools stay in your browser; live SSL checks send only the domain and port.">
     <meta name="theme-color" content="#0f172a">
     <meta property="og:title" content="Secure Tools">
-    <meta property="og:description" content="Hash, password, bcrypt, Base64, SSL checker, case-conversion, image resizing, PDF conversion and char-count utilities. Files stay local; live SSL checks send only the domain and port.">
+    <meta property="og:description" content="Hash, password, bcrypt, Base64, SSL checker, case-conversion, image resizing, PDF conversion, resizing, compression and char-count utilities. Files stay local; live SSL checks send only the domain and port.">
     <meta property="og:type" content="website">
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
@@ -104,6 +104,10 @@
                             <i data-lucide="image-upscale"></i>
                             <span class="nav-text"><span class="nav-label">Image Resizer</span><span class="nav-desc">Resize &amp; convert images</span></span>
                         </button>
+                        <button class="nav-btn" data-tool="imagesToPdf">
+                            <i data-lucide="file-text"></i>
+                            <span class="nav-text"><span class="nav-label">Images to PDF</span><span class="nav-desc">Combine images into a PDF</span></span>
+                        </button>
                     </div>
                 </div>
 
@@ -122,10 +126,6 @@
                             <i data-lucide="file-type"></i>
                             <span class="nav-text"><span class="nav-label">PDF to Word</span><span class="nav-desc">Extract text into a DOCX file</span></span>
                         </button>
-                        <button class="nav-btn" data-tool="imagesToPdf">
-                            <i data-lucide="file-text"></i>
-                            <span class="nav-text"><span class="nav-label">Images to PDF</span><span class="nav-desc">Combine images into a PDF</span></span>
-                        </button>
                         <button class="nav-btn" data-tool="splitPdf">
                             <i data-lucide="scissors"></i>
                             <span class="nav-text"><span class="nav-label">Split PDF</span><span class="nav-desc">Pages &amp; custom ranges</span></span>
@@ -141,6 +141,14 @@
                         <button class="nav-btn" data-tool="protectPdf">
                             <i data-lucide="lock-keyhole"></i>
                             <span class="nav-text"><span class="nav-label">Protect PDF</span><span class="nav-desc">AES-256 password &amp; permissions</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="compressPdf">
+                            <i data-lucide="file-down"></i>
+                            <span class="nav-text"><span class="nav-label">Compress PDF</span><span class="nav-desc">Shrink toward a target size</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="resizePdf">
+                            <i data-lucide="scaling"></i>
+                            <span class="nav-text"><span class="nav-label">Resize PDF</span><span class="nav-desc">Change page size &amp; scale</span></span>
                         </button>
                     </div>
                 </div>
@@ -1366,6 +1374,187 @@
             </div>
         </div>
 
+        <div class="tab-content" id="compressPdfTab">
+            <div class="resize-app pdf-app" id="compressPdfApp">
+                <aside class="resize-sidebar" aria-label="Compress PDF settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="compressPdfAddBtn"><i data-lucide="file-up"></i> Add PDF</button>
+                        <button type="button" class="resize-clear-all-btn" id="compressPdfClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="compressPdfDropzone" role="button" tabindex="0" aria-label="Add a PDF to compress">
+                        <i data-lucide="file-down"></i>
+                        <div class="resize-dropzone-text"><strong>Drop a PDF here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">PDF files only</div>
+                        <div class="resize-dropzone-limit">Max 100 MB</div>
+                        <input type="file" id="compressPdfFileInput" accept="application/pdf,.pdf" hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="gauge"></i> Compression</h3>
+                        <div class="resize-export-field">
+                            <label for="compressPdfTargetSize">Target File Size (KB)</label>
+                            <input type="number" class="resize-field" id="compressPdfTargetSize" min="1" max="102400" step="1" inputmode="numeric" value="500">
+                            <p class="resize-field-hint" id="compressPdfTargetHint">Quality and resolution adjust automatically to reach 500 KB.</p>
+                        </div>
+
+                        <button type="button" class="resize-export-btn" id="compressPdfActionBtn" disabled><i data-lucide="file-down"></i> Compress PDF</button>
+                        <p class="resize-export-hint" id="compressPdfActionHint">Add a PDF to enable compression.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" aria-label="Compress PDF workspace">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>PDF File <span class="resize-count" id="compressPdfCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="compressPdfSub">Add a PDF to compress it.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="compressPdfTotal"></div>
+                    </div>
+
+                    <div class="resize-empty" id="compressPdfEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="file-down"></i></div>
+                        <h4>No PDF yet</h4>
+                        <p>Add a PDF to shrink it toward a target file size. Quality and resolution are chosen automatically.</p>
+                        <button type="button" class="resize-empty-btn" id="compressPdfEmptyAddBtn"><i data-lucide="file-up"></i> Select PDF</button>
+                        <span>Your PDF never leaves this device</span>
+                    </div>
+
+                    <div class="pdf-doc-list" id="compressPdfDocs" hidden></div>
+
+                    <div class="pdf-output" id="compressPdfOutput" hidden>
+                        <div class="pdf-output-icon"><i data-lucide="file-down"></i></div>
+                        <div class="pdf-output-body">
+                            <strong id="compressPdfOutputName">compressed.pdf</strong>
+                            <span id="compressPdfOutputMeta"></span>
+                        </div>
+                        <button type="button" class="pdf-output-download" id="compressPdfDownloadBtn"><i data-lucide="download"></i> Download</button>
+                    </div>
+
+                    <div class="resize-status" id="compressPdfStatus" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+
+            <div class="image-error resize-error" id="compressPdfError" role="alert"></div>
+
+            <div class="info">
+                <p><strong>How it works:</strong> Pages are re-rendered as JPEG images and rebuilt into a new PDF, so text becomes part of the page image and is no longer selectable or searchable. Links, bookmarks, form fields, and other interactive elements are flattened. Password-protected PDFs are unlocked locally; the compressed output is not encrypted. Text-heavy PDFs may not shrink — if compression cannot beat the original size, the original file is kept. Everything happens in your browser — nothing is uploaded.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="resizePdfTab">
+            <div class="resize-app pdf-app" id="resizePdfApp">
+                <aside class="resize-sidebar" aria-label="Resize PDF settings">
+                    <div class="resize-sidebar-actions">
+                        <button type="button" class="resize-add-btn" id="resizePdfAddBtn"><i data-lucide="file-up"></i> Add PDF</button>
+                        <button type="button" class="resize-clear-all-btn" id="resizePdfClearAllBtn" disabled><i data-lucide="trash-2"></i> Clear</button>
+                    </div>
+
+                    <div class="resize-dropzone" id="resizePdfDropzone" role="button" tabindex="0" aria-label="Add a PDF to resize">
+                        <i data-lucide="scaling"></i>
+                        <div class="resize-dropzone-text"><strong>Drop a PDF here</strong><span>or click to browse</span></div>
+                        <div class="resize-dropzone-hint">PDF files only</div>
+                        <div class="resize-dropzone-limit">Max 100 MB</div>
+                        <input type="file" id="resizePdfFileInput" accept="application/pdf,.pdf" hidden>
+                    </div>
+
+                    <section class="resize-settings">
+                        <h3 class="resize-settings-title"><i data-lucide="scaling"></i> Page Size</h3>
+                        <div class="resize-export-field">
+                            <label for="resizePdfSize">Paper Size</label>
+                            <select class="resize-field" id="resizePdfSize">
+                                <option value="a4" selected>A4 — 210 × 297 mm</option>
+                                <option value="letter">US Letter — 215.9 × 279.4 mm</option>
+                                <option value="legal">Legal — 215.9 × 355.6 mm</option>
+                                <option value="a3">A3 — 297 × 420 mm</option>
+                                <option value="a5">A5 — 148 × 210 mm</option>
+                                <option value="tabloid">Tabloid — 279.4 × 431.8 mm</option>
+                                <option value="custom">Custom size</option>
+                            </select>
+                        </div>
+
+                        <div class="resize-export-field" id="resizePdfOrientationField">
+                            <label for="resizePdfOrientation">Orientation</label>
+                            <select class="resize-field" id="resizePdfOrientation">
+                                <option value="portrait" selected>Portrait</option>
+                                <option value="landscape">Landscape</option>
+                            </select>
+                        </div>
+
+                        <div class="resize-export-field" id="resizePdfCustomFields" hidden>
+                            <div class="pdf-inline-fields">
+                                <div class="resize-export-field">
+                                    <label for="resizePdfWidth">Width (mm)</label>
+                                    <input type="number" class="resize-field" id="resizePdfWidth" min="10" max="5000" step="1" inputmode="decimal" value="210">
+                                </div>
+                                <div class="resize-export-field">
+                                    <label for="resizePdfHeight">Height (mm)</label>
+                                    <input type="number" class="resize-field" id="resizePdfHeight" min="10" max="5000" step="1" inputmode="decimal" value="297">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="resizePdfMode">Scaling</label>
+                            <select class="resize-field" id="resizePdfMode">
+                                <option value="fit" selected>Fit — keep proportions</option>
+                                <option value="fill">Fill — crop overflow</option>
+                                <option value="stretch">Stretch — may distort</option>
+                                <option value="actual">Actual size — no scaling</option>
+                            </select>
+                            <p class="resize-field-hint" id="resizePdfModeHint">Content is scaled to fit inside the new page and centered.</p>
+                        </div>
+
+                        <div class="resize-export-field">
+                            <label for="resizePdfRange">Page Range</label>
+                            <input type="text" class="resize-field" id="resizePdfRange" placeholder="All pages" autocomplete="off">
+                            <p class="resize-field-hint">Leave blank to resize every page.</p>
+                        </div>
+
+                        <button type="button" class="resize-export-btn" id="resizePdfActionBtn" disabled><i data-lucide="scaling"></i> Resize PDF</button>
+                        <p class="resize-export-hint" id="resizePdfActionHint">Add a PDF to enable resizing.</p>
+                    </section>
+                </aside>
+
+                <section class="resize-workspace" aria-label="Resize PDF workspace">
+                    <div class="resize-workspace-head">
+                        <div>
+                            <h3>PDF File <span class="resize-count" id="resizePdfCount">0</span></h3>
+                            <p class="resize-workspace-sub" id="resizePdfSub">Add a PDF to change its page size.</p>
+                        </div>
+                        <div class="resize-workspace-total" id="resizePdfTotal"></div>
+                    </div>
+
+                    <div class="resize-empty" id="resizePdfEmpty">
+                        <div class="resize-empty-icon"><i data-lucide="scaling"></i></div>
+                        <h4>No PDF yet</h4>
+                        <p>Add a PDF, choose a paper size, and resize its pages. Text stays selectable and the original file is never modified.</p>
+                        <button type="button" class="resize-empty-btn" id="resizePdfEmptyAddBtn"><i data-lucide="file-up"></i> Select PDF</button>
+                        <span>Your PDF never leaves this device</span>
+                    </div>
+
+                    <div class="pdf-doc-list" id="resizePdfDocs" hidden></div>
+
+                    <div class="pdf-output" id="resizePdfOutput" hidden>
+                        <div class="pdf-output-icon"><i data-lucide="scaling"></i></div>
+                        <div class="pdf-output-body">
+                            <strong id="resizePdfOutputName">resized.pdf</strong>
+                            <span id="resizePdfOutputMeta"></span>
+                        </div>
+                        <button type="button" class="pdf-output-download" id="resizePdfDownloadBtn"><i data-lucide="download"></i> Download</button>
+                    </div>
+
+                    <div class="resize-status" id="resizePdfStatus" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+
+            <div class="image-error resize-error" id="resizePdfError" role="alert"></div>
+
+            <div class="info">
+                <p><strong>Privacy Note:</strong> Pages are resized with pdf-lib entirely in your browser — text stays selectable and the PDF is never uploaded. Scaling transforms page content; links, form fields, and annotations may not follow the new page size. Password-protected PDFs are unlocked locally, and the resized output is not encrypted.</p>
+            </div>
+        </div>
+
         <div class="tab-content" id="sslTab">
             <section id="ssl-checker-section">
                 <p class="checker-intro">Inspect a certificate locally from a file or PEM, or check a live domain and
@@ -1501,9 +1690,9 @@
     <script src="assets/js/image-preview.js?v=1"></script>
     <script src="assets/vendor/pkijs.browser.js?v=3.0.5"></script>
     <script src="assets/js/ssl-checker.js?v=1"></script>
-    <script src="assets/js/script.js?v=26"></script>
+    <script src="assets/js/script.js?v=28"></script>
     <script src="assets/js/pdf-tool.js?v=19"></script>
-    <script src="assets/js/pdf-extra-tools.js?v=1"></script>
+    <script src="assets/js/pdf-extra-tools.js?v=4"></script>
 </body>
 
 </html>

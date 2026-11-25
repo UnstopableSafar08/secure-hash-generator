@@ -1,4 +1,4 @@
-/* Secure Tools extra PDF utilities: Word export, split, merge, watermark and encryption.
+/* Secure Tools extra PDF utilities: Word export, split, merge, watermark, encryption and compression.
    Everything runs locally in the browser. */
 (function () {
     'use strict';
@@ -9,6 +9,12 @@
     const MAX_PDF_BYTES = 100 * 1024 * 1024;
     const MAX_MERGE_FILES = 20;
     const MAX_WORD_PAGES = 500;
+    const MAX_COMPRESS_PAGES = 200;
+    const MAX_COMPRESS_TARGET_KB = 102400;
+    const COMPRESS_RENDER_SCALE = 2; // 144 DPI before pixel/dimension caps
+    const COMPRESS_MAX_PIXELS = 12000000;
+    const COMPRESS_MAX_DIMENSION = 5000;
+    const COMPRESS_MIN_SCALE_RATIO = 0.2;
     const CANCELLED = Symbol('pdf-extra-cancelled');
 
     let pdfjsPromise = null;
@@ -342,8 +348,10 @@
         return pdfDoc;
     }
 
-    /* Load with PDF.js (needed for text extraction). */
-    async function openPdfJsDocument(doc) {
+    /* Load with PDF.js (needed for text extraction and page rendering). */
+    async function openPdfJsDocument(doc, options) {
+        const maxPages = (options && options.maxPages) || MAX_WORD_PAGES;
+        const toolLabel = (options && options.label) || 'PDF to Word';
         const pdfjs = await loadPdfJs();
         const buffer = await doc.file.arrayBuffer();
         const task = pdfjs.getDocument({
@@ -373,9 +381,9 @@
                 try { pdf.destroy(); } catch (error) { /* ignore */ }
                 throw CANCELLED;
             }
-            if (pdf.numPages > MAX_WORD_PAGES) {
+            if (pdf.numPages > maxPages) {
                 try { pdf.destroy(); } catch (error) { /* ignore */ }
-                throw new Error('This PDF has ' + pdf.numPages + ' pages. PDF to Word supports up to ' + MAX_WORD_PAGES + ' pages at a time.');
+                throw new Error('This PDF has ' + pdf.numPages + ' pages. ' + toolLabel + ' supports up to ' + maxPages + ' pages at a time.');
             }
             doc.pageCount = pdf.numPages;
             doc.pdfjsDoc = pdf;
@@ -2056,6 +2064,713 @@
     }
 
     /* ---------------------------------------------------------------------
+       Compress PDF (target file size)
+       --------------------------------------------------------------------- */
+
+    async function loadCompressPdfDocument(doc) {
+        return openPdfJsDocument(doc, {
+            maxPages: MAX_COMPRESS_PAGES,
+            label: 'PDF compression'
+        });
+    }
+
+    function compressRenderScale(baseViewport) {
+        const width = baseViewport.width * COMPRESS_RENDER_SCALE;
+        const height = baseViewport.height * COMPRESS_RENDER_SCALE;
+        const dimensionScale = Math.min(1, COMPRESS_MAX_DIMENSION / Math.max(width, height));
+        const pixelScale = Math.min(1, Math.sqrt(COMPRESS_MAX_PIXELS / (width * height)));
+        return Math.max(0.05, COMPRESS_RENDER_SCALE * Math.min(dimensionScale, pixelScale));
+    }
+
+    function canvasToJpegBlob(canvas, quality) {
+        return new Promise(function (resolve, reject) {
+            try {
+                canvas.toBlob(function (blob) {
+                    if (blob) resolve(blob);
+                    else reject(new Error('This PDF page could not be encoded as an image.'));
+                }, 'image/jpeg', quality);
+            } catch (error) {
+                reject(new Error('This PDF page is too large to process in your browser.'));
+            }
+        });
+    }
+
+    async function renderPdfPageCanvas(page, scale) {
+        const viewport = page.getViewport({ scale: scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(viewport.width));
+        canvas.height = Math.max(1, Math.round(viewport.height));
+        const context = canvas.getContext('2d', { alpha: false });
+        if (!context) throw new Error('This PDF page is too large to process in your browser.');
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+        return canvas;
+    }
+
+    function scaleCanvas(source, width, height) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d', { alpha: false });
+        if (!context) throw new Error('This PDF page is too large to process in your browser.');
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, width, height);
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(source, 0, 0, width, height);
+        return canvas;
+    }
+
+    async function searchCanvasJpeg(canvas, targetBytes) {
+        const minQuality = 0.02;
+        const maxQuality = 0.9;
+        let blob = await canvasToJpegBlob(canvas, maxQuality);
+        if (blob.size <= targetBytes) {
+            return { blob: blob, quality: Math.round(maxQuality * 100), met: true };
+        }
+
+        const floorBlob = await canvasToJpegBlob(canvas, minQuality);
+        if (floorBlob.size > targetBytes) {
+            return { blob: floorBlob, quality: Math.round(minQuality * 100), met: false };
+        }
+
+        let best = { blob: floorBlob, quality: Math.round(minQuality * 100) };
+        let low = minQuality;
+        let high = maxQuality;
+
+        for (let index = 0; index < 7; index++) {
+            const mid = (low + high) / 2;
+            blob = await canvasToJpegBlob(canvas, mid);
+            if (blob.size <= targetBytes) {
+                best = { blob: blob, quality: Math.round(mid * 100) };
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+
+        return { blob: best.blob, quality: best.quality, met: true };
+    }
+
+    async function encodePageToBudget(page, baseViewport, budgetBytes) {
+        let scale = compressRenderScale(baseViewport);
+        const minScale = Math.max(0.02, scale * COMPRESS_MIN_SCALE_RATIO);
+        let canvas = await renderPdfPageCanvas(page, scale);
+        let result = null;
+
+        for (let pass = 0; pass < 4; pass++) {
+            result = await searchCanvasJpeg(canvas, budgetBytes);
+            if (result.met) {
+                return {
+                    blob: result.blob,
+                    quality: result.quality,
+                    width: canvas.width,
+                    height: canvas.height,
+                    met: true
+                };
+            }
+
+            if (pass === 3) break;
+
+            const ratio = Math.sqrt(budgetBytes / result.blob.size);
+            if (!Number.isFinite(ratio)) break;
+
+            const nextScale = Math.max(minScale, scale * Math.max(0.35, Math.min(0.92, ratio * 0.97)));
+            if (nextScale >= scale - 0.0001) break;
+
+            const nextWidth = Math.max(1, Math.round(canvas.width * (nextScale / scale)));
+            const nextHeight = Math.max(1, Math.round(canvas.height * (nextScale / scale)));
+            if (nextWidth === canvas.width && nextHeight === canvas.height) break;
+
+            canvas = scaleCanvas(canvas, nextWidth, nextHeight);
+            scale = nextScale;
+        }
+
+        return {
+            blob: result ? result.blob : null,
+            quality: result ? result.quality : 0,
+            width: canvas.width,
+            height: canvas.height,
+            met: false
+        };
+    }
+
+    async function buildCompressedPdf(pages) {
+        const PDFLib = await loadPdfLib();
+        const pdfDoc = await PDFLib.PDFDocument.create();
+        pdfDoc.setProducer('Secure Tools');
+        pdfDoc.setCreator('Secure Tools PDF Compressor');
+
+        for (let index = 0; index < pages.length; index++) {
+            const pageData = pages[index];
+            const bytes = new Uint8Array(await pageData.blob.arrayBuffer());
+            const image = await pdfDoc.embedJpg(bytes);
+            const outputPage = pdfDoc.addPage([pageData.width, pageData.height]);
+            outputPage.drawImage(image, {
+                x: 0,
+                y: 0,
+                width: pageData.width,
+                height: pageData.height
+            });
+        }
+
+        return pdfDoc.save();
+    }
+
+    async function compressPdfPages(pdf, targetBytes, onProgress) {
+        const pageCount = pdf.numPages;
+        // pdf-lib adds page objects, content streams, and an xref table. Reserve
+        // a small per-page overhead so the image budgets don't overshoot the target.
+        const estimatedOverhead = 4096 + pageCount * 768;
+        let budget = Math.max(1024, Math.floor((targetBytes - estimatedOverhead) / pageCount));
+        let best = null;
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+            let pages;
+            let blob;
+
+            try {
+                pages = [];
+
+                for (let index = 0; index < pageCount; index++) {
+                    if (onProgress) {
+                        onProgress({ phase: 'page', page: index + 1, pageCount: pageCount, attempt: attempt });
+                    }
+
+                    const page = await pdf.getPage(index + 1);
+                    const baseViewport = page.getViewport({ scale: 1 });
+                    const encoded = await encodePageToBudget(page, baseViewport, budget);
+                    if (!encoded.blob) {
+                        throw new Error('Page ' + (index + 1) + ' could not be compressed.');
+                    }
+
+                    pages.push({
+                        blob: encoded.blob,
+                        width: baseViewport.width,
+                        height: baseViewport.height
+                    });
+
+                    try { page.cleanup(); } catch (error) { /* ignore */ }
+                    await new Promise(function (resolve) { setTimeout(resolve, 0); });
+                }
+
+                if (onProgress) {
+                    onProgress({ phase: 'build', pageCount: pageCount, attempt: attempt });
+                }
+
+                const bytes = await buildCompressedPdf(pages);
+                blob = new Blob([bytes], { type: 'application/pdf' });
+            } catch (error) {
+                // Keep the first complete result if the refinement pass fails.
+                if (best) break;
+                throw error;
+            }
+
+            if (!best || blob.size < best.blob.size) {
+                best = { blob: blob, pages: pages };
+            }
+
+            if (blob.size <= targetBytes) {
+                return { blob: blob, met: true, pages: pages };
+            }
+
+            if (attempt === 0) {
+                const ratio = targetBytes / blob.size;
+                if (ratio < 0.995) {
+                    budget = Math.max(512, Math.floor(budget * ratio * 0.94));
+                    continue;
+                }
+            }
+            break;
+        }
+
+        return { blob: best.blob, met: false, pages: best.pages };
+    }
+
+    function initCompressPdf() {
+        const targetInput = byId('compressPdfTargetSize');
+        const targetHint = byId('compressPdfTargetHint');
+        const actionBtn = byId('compressPdfActionBtn');
+        const actionHint = byId('compressPdfActionHint');
+        if (!targetInput || !actionBtn || !actionHint) return;
+
+        function targetState() {
+            const raw = targetInput.value.trim();
+            if (!raw) return { error: 'Enter a target file size in KB.' };
+            const value = Number(raw);
+            if (!Number.isFinite(value) || value < 1) {
+                return { error: 'Target file size must be at least 1 KB.' };
+            }
+            if (value > MAX_COMPRESS_TARGET_KB) {
+                return { error: 'Target file size cannot exceed ' + MAX_COMPRESS_TARGET_KB.toLocaleString() + ' KB.' };
+            }
+            return { bytes: Math.round(value * 1024) };
+        }
+
+        const tool = createSingleDocTool({
+            prefix: 'compressPdf',
+            emptySub: 'Add a PDF to compress it toward a target size.',
+            load: function (doc) {
+                return loadCompressPdfDocument(doc);
+            },
+            readyStatus: function (doc) {
+                return 'Read ' + doc.pageCount + (doc.pageCount === 1 ? ' page' : ' pages') + ' from "' + doc.name + '".';
+            },
+            updateAction: function (ui) {
+                const ready = !!(ui.doc && ui.doc.status === 'ready');
+                const state = targetState();
+                const invalid = !!state.error;
+                actionBtn.disabled = !ready || ui.busy || invalid;
+                targetInput.disabled = ui.busy || ui.loading;
+                targetInput.classList.toggle('invalid', invalid);
+                targetHint.classList.toggle('invalid', invalid);
+
+                if (state.error) {
+                    targetHint.textContent = state.error;
+                } else if (ui.doc && ui.doc.size && state.bytes >= ui.doc.size) {
+                    targetHint.textContent = 'This PDF is already ' + formatBytes(ui.doc.size) +
+                        '. A target this large returns the original file.';
+                } else {
+                    targetHint.textContent = 'Quality and resolution adjust automatically to reach ' +
+                        formatBytes(state.bytes) + '.';
+                }
+
+                if (!ui.doc) {
+                    actionHint.textContent = 'Add a PDF to enable compression.';
+                } else if (ui.doc.status === 'loading') {
+                    actionHint.textContent = 'Reading PDF…';
+                } else if (ui.doc.status === 'error') {
+                    actionHint.textContent = 'Fix the error above to continue.';
+                } else if (ui.busy) {
+                    actionHint.textContent = 'Compressing PDF…';
+                } else if (state.error) {
+                    actionHint.textContent = state.error;
+                } else if (ui.doc.size <= state.bytes) {
+                    actionHint.textContent = 'The PDF is already smaller than the target.';
+                } else {
+                    actionHint.textContent = ui.doc.pageCount + (ui.doc.pageCount === 1 ? ' page' : ' pages') +
+                        ' ready to compress from ' + formatBytes(ui.doc.size) + '.';
+                }
+            }
+        });
+
+        targetInput.addEventListener('input', function () {
+            tool.setError('');
+            tool.clearOutput();
+            tool.setStatus('', '');
+            tool.updateAction();
+        });
+
+        actionBtn.addEventListener('click', async function () {
+            const doc = tool.ui.doc;
+            if (!doc || doc.status !== 'ready' || tool.ui.busy) return;
+
+            const state = targetState();
+            if (state.error) {
+                tool.setError(state.error);
+                targetInput.focus();
+                return;
+            }
+
+            tool.setBusy(true);
+            tool.clearOutput();
+            tool.setError('');
+
+            try {
+                if (doc.size <= state.bytes) {
+                    const meta = doc.pageCount + (doc.pageCount === 1 ? ' page' : ' pages') +
+                        ' · ' + formatBytes(doc.size) + ' · already under target';
+                    tool.setOutput(doc.file, sanitizePdfName(doc.name, 'document.pdf'), meta);
+                    tool.setStatus('This PDF is already ' + formatBytes(doc.size) + ', below the ' +
+                        formatBytes(state.bytes) + ' target. The original file is ready to download.', 'success');
+                    return;
+                }
+
+                tool.setStatus('Preparing compression…', 'busy');
+                const result = await compressPdfPages(doc.pdfjsDoc, state.bytes, function (progress) {
+                    if (progress.phase === 'build') {
+                        tool.setStatus('Building compressed PDF…', 'busy');
+                    } else {
+                        tool.setStatus((progress.attempt ? 'Refining — ' : '') + 'Compressing page ' +
+                            progress.page + ' of ' + progress.pageCount + '…', 'busy');
+                    }
+                });
+
+                if (!result || !result.blob) {
+                    throw new Error('The compressed PDF could not be created.');
+                }
+
+                if (result.blob.size >= doc.size) {
+                    const meta = doc.pageCount + (doc.pageCount === 1 ? ' page' : ' pages') +
+                        ' · ' + formatBytes(doc.size) + ' · original kept';
+                    tool.setOutput(doc.file, sanitizePdfName(doc.name, 'document.pdf'), meta);
+                    tool.setStatus('This PDF could not be made smaller than its current ' +
+                        formatBytes(doc.size) + '. The original file is ready to download.', 'warning');
+                    return;
+                }
+
+                const name = safeBaseName(doc.name) + '-compressed.pdf';
+                const size = result.blob.size;
+                const meta = doc.pageCount + (doc.pageCount === 1 ? ' page' : ' pages') +
+                    ' · ' + formatBytes(size) + ' · target ' + formatBytes(state.bytes) +
+                    (doc.usedPassword ? ' · not encrypted' : '');
+                tool.setOutput(result.blob, name, meta);
+
+                if (result.met) {
+                    const saved = Math.max(0, Math.round((1 - size / doc.size) * 100));
+                    tool.setStatus('Compressed ' + doc.pageCount + (doc.pageCount === 1 ? ' page' : ' pages') +
+                        ' to ' + formatBytes(size) + ' — ' + saved + '% smaller than the original.', 'success');
+                } else {
+                    tool.setStatus('Compression finished at ' + formatBytes(size) +
+                        '. The ' + formatBytes(state.bytes) +
+                        ' target could not be reached — this is the smallest output.', 'warning');
+                }
+            } catch (error) {
+                console.error('Compress PDF failed:', error);
+                tool.setError(pdfErrorMessage(error));
+                tool.setStatus('', '');
+            } finally {
+                tool.setBusy(false);
+            }
+        });
+    }
+
+    /* ---------------------------------------------------------------------
+       Resize PDF (page size and content scaling)
+       --------------------------------------------------------------------- */
+
+    const MAX_RESIZE_PAGES = 500;
+    const MM_TO_PT = 72 / 25.4;
+    const RESIZE_PAGE_PRESETS = {
+        a4: { label: 'A4', width: 210, height: 297 },
+        letter: { label: 'US Letter', width: 215.9, height: 279.4 },
+        legal: { label: 'Legal', width: 215.9, height: 355.6 },
+        a3: { label: 'A3', width: 297, height: 420 },
+        a5: { label: 'A5', width: 148, height: 210 },
+        tabloid: { label: 'Tabloid', width: 279.4, height: 431.8 }
+    };
+
+    function formatMillimeters(value) {
+        return String(Math.round(value * 10) / 10);
+    }
+
+    function pageRotationDegrees(page) {
+        const angle = page.getRotation().angle;
+        return ((Math.round(angle / 90) * 90) % 360 + 360) % 360;
+    }
+
+    function clipPdfPageContent(page, x, y, width, height) {
+        const PDFLib = window.PDFLib;
+        if (!PDFLib || typeof page.createContentStream !== 'function' ||
+            !page.node || typeof page.node.wrapContentStreams !== 'function') {
+            return;
+        }
+        try {
+            const pre = page.createContentStream(
+                PDFLib.pushGraphicsState(),
+                PDFLib.rectangle(x, y, width, height),
+                PDFLib.clip(),
+                PDFLib.endPath()
+            );
+            const post = page.createContentStream(PDFLib.popGraphicsState());
+            page.node.wrapContentStreams(page.doc.context.register(pre), page.doc.context.register(post));
+        } catch (error) {
+            // Clipping is best-effort; the page still resizes without it.
+        }
+    }
+
+    function resizePdfPage(page, targetWidth, targetHeight, mode) {
+        const crop = page.getCropBox();
+        const cropX = crop.x;
+        const cropY = crop.y;
+        const cropWidth = Math.max(1, crop.width);
+        const cropHeight = Math.max(1, crop.height);
+        const rotation = pageRotationDegrees(page);
+        const rotated = rotation === 90 || rotation === 270;
+        const visualWidth = rotated ? cropHeight : cropWidth;
+        const visualHeight = rotated ? cropWidth : cropHeight;
+
+        let visualScaleX;
+        let visualScaleY;
+
+        if (mode === 'stretch') {
+            visualScaleX = targetWidth / visualWidth;
+            visualScaleY = targetHeight / visualHeight;
+        } else if (mode === 'fit' || mode === 'fill') {
+            const scale = mode === 'fit'
+                ? Math.min(targetWidth / visualWidth, targetHeight / visualHeight)
+                : Math.max(targetWidth / visualWidth, targetHeight / visualHeight);
+            visualScaleX = scale;
+            visualScaleY = scale;
+        } else {
+            visualScaleX = 1;
+            visualScaleY = 1;
+        }
+
+        // A rotated page maps raw X to visual Y and raw Y to visual X.
+        const rawScaleX = rotated ? visualScaleY : visualScaleX;
+        const rawScaleY = rotated ? visualScaleX : visualScaleY;
+        const contentWidth = visualWidth * visualScaleX;
+        const contentHeight = visualHeight * visualScaleY;
+        const offsetX = (targetWidth - contentWidth) / 2;
+        const offsetY = (targetHeight - contentHeight) / 2;
+
+        // Translate the crop-box origin away, scale the content, then centre the
+        // scaled content. The /Rotate applied by the viewer swaps the axes, so
+        // sideways pages take their centring offsets in the opposite order.
+        const translateX = rotated ? offsetY : offsetX;
+        const translateY = rotated ? offsetX : offsetY;
+
+        page.translateContent(-cropX, -cropY);
+        page.scaleContent(rawScaleX, rawScaleY);
+        if (translateX || translateY) {
+            page.translateContent(translateX, translateY);
+        }
+        clipPdfPageContent(page, translateX, translateY, cropWidth * rawScaleX, cropHeight * rawScaleY);
+
+        const rawWidth = rotated ? targetHeight : targetWidth;
+        const rawHeight = rotated ? targetWidth : targetHeight;
+        page.setMediaBox(0, 0, rawWidth, rawHeight);
+        page.setCropBox(0, 0, rawWidth, rawHeight);
+    }
+
+    function initResizePdf() {
+        const sizeSelect = byId('resizePdfSize');
+        const orientationField = byId('resizePdfOrientationField');
+        const orientationSelect = byId('resizePdfOrientation');
+        const customFields = byId('resizePdfCustomFields');
+        const widthInput = byId('resizePdfWidth');
+        const heightInput = byId('resizePdfHeight');
+        const modeSelect = byId('resizePdfMode');
+        const modeHint = byId('resizePdfModeHint');
+        const rangeInput = byId('resizePdfRange');
+        const actionBtn = byId('resizePdfActionBtn');
+        const actionHint = byId('resizePdfActionHint');
+        if (!sizeSelect || !orientationSelect || !widthInput || !heightInput || !modeSelect || !actionBtn || !actionHint) return;
+
+        const modeLabels = {
+            fit: 'fit',
+            fill: 'fill',
+            stretch: 'stretch',
+            actual: 'actual size'
+        };
+
+        function applyPresetToFields() {
+            const preset = RESIZE_PAGE_PRESETS[sizeSelect.value];
+            if (!preset) return;
+            const landscape = orientationSelect.value === 'landscape';
+            widthInput.value = formatMillimeters(landscape ? preset.height : preset.width);
+            heightInput.value = formatMillimeters(landscape ? preset.width : preset.height);
+        }
+
+        function syncCustomVisibility() {
+            const custom = sizeSelect.value === 'custom';
+            if (customFields) customFields.hidden = !custom;
+            if (orientationField) orientationField.hidden = custom;
+            if (!custom) applyPresetToFields();
+        }
+
+        function targetState() {
+            const custom = sizeSelect.value === 'custom';
+            let widthMm;
+            let heightMm;
+            let label;
+
+            if (custom) {
+                widthMm = Number(widthInput.value);
+                heightMm = Number(heightInput.value);
+                if (!Number.isFinite(widthMm) || widthMm < 10 || widthMm > 5000) {
+                    return { error: 'Width must be between 10 and 5000 mm.' };
+                }
+                if (!Number.isFinite(heightMm) || heightMm < 10 || heightMm > 5000) {
+                    return { error: 'Height must be between 10 and 5000 mm.' };
+                }
+                label = 'custom size';
+            } else {
+                const preset = RESIZE_PAGE_PRESETS[sizeSelect.value] || RESIZE_PAGE_PRESETS.a4;
+                const landscape = orientationSelect.value === 'landscape';
+                widthMm = landscape ? preset.height : preset.width;
+                heightMm = landscape ? preset.width : preset.height;
+                label = preset.label + ' ' + (landscape ? 'landscape' : 'portrait');
+            }
+
+            return {
+                width: widthMm * MM_TO_PT,
+                height: heightMm * MM_TO_PT,
+                widthMm: widthMm,
+                heightMm: heightMm,
+                label: label
+            };
+        }
+
+        function updateModeHint() {
+            if (!modeHint) return;
+            if (modeSelect.value === 'fit') {
+                modeHint.textContent = 'Content is scaled to fit inside the new page and centered.';
+            } else if (modeSelect.value === 'fill') {
+                modeHint.textContent = 'Content is scaled to fill the page; anything past the edge is cropped.';
+            } else if (modeSelect.value === 'stretch') {
+                modeHint.textContent = 'Content stretches to fill the page and may look distorted.';
+            } else {
+                modeHint.textContent = 'Content keeps its original size and is centered on the new page.';
+            }
+        }
+
+        const tool = createSingleDocTool({
+            prefix: 'resizePdf',
+            emptySub: 'Add a PDF to change its page size.',
+            load: async function (doc) {
+                const pdfDoc = await loadPdfLibDocumentRecord(doc);
+                if (pdfDoc.getPageCount() > MAX_RESIZE_PAGES) {
+                    throw new Error('This PDF has ' + pdfDoc.getPageCount() + ' pages. Resize PDF supports up to ' +
+                        MAX_RESIZE_PAGES + ' pages at a time.');
+                }
+                return pdfDoc;
+            },
+            readyStatus: function (doc) {
+                return 'Read ' + doc.pageCount + (doc.pageCount === 1 ? ' page' : ' pages') + ' from "' + doc.name + '".';
+            },
+            updateAction: function (ui) {
+                const ready = !!(ui.doc && ui.doc.status === 'ready');
+                const state = targetState();
+                const invalid = !!state.error;
+                const widthInvalid = invalid && state.error.indexOf('Width') === 0;
+                const heightInvalid = invalid && state.error.indexOf('Height') === 0;
+                actionBtn.disabled = !ready || ui.busy || invalid;
+                widthInput.classList.toggle('invalid', widthInvalid);
+                heightInput.classList.toggle('invalid', heightInvalid);
+
+                if (!ui.doc) {
+                    actionHint.textContent = 'Add a PDF to enable resizing.';
+                } else if (ui.doc.status === 'loading') {
+                    actionHint.textContent = 'Reading PDF…';
+                } else if (ui.doc.status === 'error') {
+                    actionHint.textContent = 'Fix the error above to continue.';
+                } else if (ui.busy) {
+                    actionHint.textContent = 'Resizing PDF…';
+                } else if (state.error) {
+                    actionHint.textContent = state.error;
+                } else {
+                    actionHint.textContent = (rangeInput && rangeInput.value.trim() ? 'Selected pages' : 'All pages') +
+                        ' will resize to ' + state.label + ' (' + formatMillimeters(state.widthMm) + ' × ' +
+                        formatMillimeters(state.heightMm) + ' mm) · ' + modeLabels[modeSelect.value] + '.';
+                }
+            },
+            onNewDoc: function () {
+                rangeInput.value = '';
+                rangeInput.classList.remove('invalid');
+            },
+            onClear: function () {
+                rangeInput.classList.remove('invalid');
+            }
+        });
+
+        sizeSelect.addEventListener('change', function () {
+            syncCustomVisibility();
+            tool.setError('');
+            tool.clearOutput();
+            tool.setStatus('');
+            tool.updateAction();
+        });
+
+        orientationSelect.addEventListener('change', function () {
+            applyPresetToFields();
+            tool.setError('');
+            tool.clearOutput();
+            tool.setStatus('');
+            tool.updateAction();
+        });
+
+        [widthInput, heightInput].forEach(function (field) {
+            field.addEventListener('input', function () {
+                tool.setError('');
+                tool.clearOutput();
+                tool.setStatus('');
+                tool.updateAction();
+            });
+        });
+
+        modeSelect.addEventListener('change', function () {
+            updateModeHint();
+            tool.setError('');
+            tool.clearOutput();
+            tool.setStatus('');
+            tool.updateAction();
+        });
+
+        rangeInput.addEventListener('input', function () {
+            rangeInput.classList.remove('invalid');
+            tool.setError('');
+            tool.updateAction();
+        });
+
+        syncCustomVisibility();
+        updateModeHint();
+
+        actionBtn.addEventListener('click', async function () {
+            const doc = tool.ui.doc;
+            if (!doc || doc.status !== 'ready' || tool.ui.busy) return;
+
+            const target = targetState();
+            if (target.error) {
+                tool.setError(target.error);
+                (target.error.indexOf('Width') === 0 ? widthInput : heightInput).focus();
+                return;
+            }
+
+            let pageIndices;
+            try {
+                pageIndices = parsePageSelection(rangeInput.value, doc.pageCount);
+            } catch (error) {
+                rangeInput.classList.add('invalid');
+                tool.setError(error.message);
+                rangeInput.focus();
+                return;
+            }
+            rangeInput.classList.remove('invalid');
+
+            tool.setBusy(true);
+            tool.clearOutput();
+            tool.setError('');
+            tool.setStatus('Resizing pages…', 'busy');
+
+            try {
+                const pdfDoc = await openPdfLibDocument(doc);
+                const mode = modeSelect.value;
+
+                for (let index = 0; index < pageIndices.length; index++) {
+                    const page = pdfDoc.getPage(pageIndices[index]);
+                    resizePdfPage(page, target.width, target.height, mode);
+
+                    if (index % 20 === 0) {
+                        tool.setStatus('Resizing page ' + (index + 1) + ' of ' + pageIndices.length + '…', 'busy');
+                        await new Promise(function (resolve) { setTimeout(resolve, 0); });
+                    }
+                }
+
+                tool.setStatus('Saving resized PDF…', 'busy');
+                const bytes = await pdfDoc.save();
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+                const name = safeBaseName(doc.name) + '-resized.pdf';
+                const meta = pageIndices.length + (pageIndices.length === 1 ? ' page' : ' pages') +
+                    ' · ' + formatBytes(blob.size) + ' · ' + target.label +
+                    (doc.usedPassword ? ' · not encrypted' : '');
+                tool.setOutput(blob, name, meta);
+                tool.setStatus('Resized ' + pageIndices.length + (pageIndices.length === 1 ? ' page' : ' pages') +
+                    ' to ' + target.label + ' (' + formatMillimeters(target.widthMm) + ' × ' +
+                    formatMillimeters(target.heightMm) + ' mm) — ' + formatBytes(blob.size) + '.', 'success');
+            } catch (error) {
+                console.error('Resize PDF failed:', error);
+                tool.setError(pdfErrorMessage(error));
+                tool.setStatus('');
+            } finally {
+                tool.setBusy(false);
+            }
+        });
+    }
+
+    /* ---------------------------------------------------------------------
        Initialize everything
        --------------------------------------------------------------------- */
 
@@ -2065,6 +2780,8 @@
         initMergePdf();
         initWatermarkPdf();
         initProtectPdf();
+        initCompressPdf();
+        initResizePdf();
     } catch (error) {
         console.error('Could not initialize extra PDF tools:', error);
     }

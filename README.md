@@ -1,6 +1,6 @@
 # Secure Tools
 
-A modern, local-first web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, converting and editing PDFs, counting characters, and inspecting SSL/TLS certificates. File-based tools and local certificate inspection run entirely in your browser using the Web Crypto API and client-side JavaScript libraries. Live SSL checks send only the requested hostname and port to a small optional Node.js endpoint, with a free Certificate Transparency fallback.
+A modern, local-first web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, converting, editing, resizing, and compressing PDFs, counting characters, and inspecting SSL/TLS certificates. File-based tools and local certificate inspection run entirely in your browser using the Web Crypto API and client-side JavaScript libraries. Live SSL checks send only the requested hostname and port to a small optional Node.js endpoint, with a free Certificate Transparency fallback.
 
 ## Features
 
@@ -150,6 +150,25 @@ A modern, local-first web application for generating hashes, passwords, random s
 - Some PDF readers may ignore permission flags even when encryption is applied
 - Built with the `@cantoo/pdf-lib` build of pdf-lib, which adds encryption support
 
+### 🗜️ Compress PDF
+- Shrink a PDF toward a target file size in KB
+- Quality and resolution adjust automatically, balancing clarity against the target size
+- Pages are re-rendered as JPEG images and rebuilt into a new PDF, so text becomes non-selectable and links, bookmarks, form fields, and other interactive elements are flattened
+- Password-protected inputs prompt for their password locally; compressed output is not encrypted
+- Supports up to 200 pages and 100 MB per input
+- If the PDF is already smaller than the target or cannot be compressed further, the original file is returned unchanged
+- Built with PDF.js page rendering and pdf-lib entirely in the browser — no uploads
+
+### 📏 Resize PDF
+- Change every page, or a chosen page range, to A4, US Letter, Legal, A3, A5, Tabloid, or a custom size in millimeters
+- Portrait and landscape orientations for standard paper sizes
+- Scaling modes: **Fit** (keep proportions and add margins), **Fill** (cover the page and crop overflow), **Stretch**, or **Actual size** (centre without scaling)
+- Handles rotated, landscape, and cropped pages while keeping text selectable
+- Password-protected inputs prompt for their password locally; resized output is not encrypted
+- Supports up to 500 pages and 100 MB per input
+- Links, form fields, and annotations may not follow the new page geometry
+- Built with pdf-lib entirely in the browser — no uploads
+
 ## Security
 
 - File-based tools and local certificate inspection run locally in your browser
@@ -160,7 +179,7 @@ A modern, local-first web application for generating hashes, passwords, random s
 - SHA-1 and MD5 are included for compatibility but are considered cryptographically broken
 - Bcrypt is designed to be slow and resistant to brute-force attacks
 - PDF encryption uses AES-256 in the browser; passwords are held only in memory for the current operation
-- Split, merge, and watermarked outputs are unencrypted unless you protect them afterwards
+- Split, merge, watermarked, compressed, and resized outputs are unencrypted unless you protect them afterwards
 
 ## Tech Stack
 
@@ -211,7 +230,7 @@ secure-hash-generator/
 │   │   ├── script.js           # Core tool logic + hash router
 │   │   ├── ssl-checker.js      # Local inspection + live/CT checks
 │   │   ├── pdf-tool.js         # PDF to images + images to PDF logic
-│   │   ├── pdf-extra-tools.js  # PDF to Word, split, merge, watermark, protect
+│   │   ├── pdf-extra-tools.js  # PDF to Word, split, merge, watermark, protect, compress, resize
 │   │   └── lucide.min.js       # Lucide icons, vendored (no CDN)
 │   ├── img/
 │   │   ├── icon.svg        # App/PWA icon
@@ -232,7 +251,7 @@ secure-hash-generator/
 ## Navigation
 
 The sidebar lists all tools. Every tool is deep-linkable via hash routes
-(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/ssl`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`, `#/pdfToImages`, `#/pdfToWord`, `#/imagesToPdf`, `#/splitPdf`, `#/mergePdf`, `#/watermarkPdf`, `#/protectPdf`),
+(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/ssl`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`, `#/pdfToImages`, `#/pdfToWord`, `#/imagesToPdf`, `#/splitPdf`, `#/mergePdf`, `#/watermarkPdf`, `#/protectPdf`, `#/compressPdf`, `#/resizePdf`),
 so bookmarks and back/forward buttons work. The sidebar search filters the
 tool list, and the layout collapses to a top nav on small screens.
 
