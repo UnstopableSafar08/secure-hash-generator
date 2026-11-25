@@ -19,7 +19,7 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css?v=23">
-    <link rel="stylesheet" href="assets/css/ssl-checker.css?v=1">
+    <link rel="stylesheet" href="assets/css/ssl-checker.css?v=2">
     <script src="assets/js/lucide.min.js?v=1.58.0"></script>
 </head>
 
@@ -167,6 +167,10 @@
                         <button class="nav-btn" data-tool="ssl">
                             <i data-lucide="lock"></i>
                             <span class="nav-text"><span class="nav-label">SSL Checker</span><span class="nav-desc">Inspect certs &amp; live domains</span></span>
+                        </button>
+                        <button class="nav-btn" data-tool="subdomains">
+                            <i data-lucide="network"></i>
+                            <span class="nav-text"><span class="nav-label">Subdomain Finder</span><span class="nav-desc">Public subdomains from CT logs</span></span>
                         </button>
                     </div>
                 </div>
@@ -1673,8 +1677,68 @@
             </section>
         </div>
 
+        <div class="tab-content" id="subdomainsTab">
+            <section id="subdomain-finder-section">
+                <p class="checker-intro">Find public subdomains for a base domain using Certificate Transparency
+                    logs and passive DNS. Results are deduplicated and sorted. This is a discovery aid, not a guarantee:
+                    subdomains without a public certificate or passive DNS record may not appear, and no brute forcing
+                    or direct DNS probing is performed.</p>
+
+                <div class="checker-card subdomain-card">
+                    <h3>Find public subdomains</h3>
+                    <form id="subdomain-form" class="subdomain-form" novalidate>
+                        <div class="checker-field">
+                            <label for="subdomain-domain">Base domain</label>
+                            <input type="text" id="subdomain-domain" placeholder="example.com"
+                                autocomplete="off" autocapitalize="none" spellcheck="false">
+                            <small>Enter a domain name, for example <code>example.com</code>. Protocols and paths
+                                are ignored.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="subdomain-btn">Find Subdomains</button>
+                    </form>
+                    <p class="checker-note is-info" id="subdomain-note">Queries the free Cert Spotter Certificate
+                        Transparency API and HackerTarget passive DNS. Only the base domain is sent; nothing is
+                        uploaded.</p>
+                </div>
+
+                <div class="checker-error ssl-hidden" id="subdomain-error" role="alert"></div>
+
+                <div class="subdomain-results ssl-hidden" id="subdomain-results" aria-live="polite">
+                    <div class="subdomain-summary">
+                        <div>
+                            <h3 id="subdomain-title">Public subdomains</h3>
+                            <p class="subdomain-summary-text" id="subdomain-summary"></p>
+                        </div>
+                        <div class="ssl-badges" id="subdomain-badges"></div>
+                    </div>
+
+                    <div class="subdomain-sources" id="subdomain-sources"></div>
+
+                    <div class="subdomain-toolbar">
+                        <input type="search" id="subdomain-filter" placeholder="Filter subdomains…"
+                            aria-label="Filter subdomains" autocomplete="off" spellcheck="false">
+                        <div class="output-actions">
+                            <button type="button" class="btn btn-secondary" id="subdomain-copy">Copy list</button>
+                            <button type="button" class="btn btn-secondary" id="subdomain-download">Download .txt</button>
+                        </div>
+                    </div>
+
+                    <ul class="subdomain-list" id="subdomain-list"></ul>
+                    <p class="subdomain-empty ssl-hidden" id="subdomain-empty">No subdomains matched this filter.</p>
+                </div>
+
+                <div class="info">
+                    <p><strong>Privacy &amp; limits:</strong> The base domain is sent to the free Cert Spotter and
+                        HackerTarget APIs; no files, certificates, or browsing data leave your browser. Certificate
+                        Transparency only reveals names that appeared in public certificates, and passive DNS may lag
+                        behind current records. Free API limits can make a search partial — each source's status is
+                        shown above the results.</p>
+                </div>
+            </section>
+        </div>
+
             <footer class="footer">
-                <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a> · Local-first tools; live SSL checks send only the domain and port.</p>
+                <p>&copy; 2026 <a href="https://sagarmalla.info.np" target="_blank" rel="noopener">Sagar Malla</a> · Local-first tools; live SSL checks and subdomain lookups send only the typed domain.</p>
             </footer>
         </main>
     </div>
@@ -1709,7 +1773,8 @@
     <script src="assets/js/image-preview.js?v=1"></script>
     <script src="assets/vendor/pkijs.browser.js?v=3.0.5"></script>
     <script src="assets/js/ssl-checker.js?v=1"></script>
-    <script src="assets/js/script.js?v=29"></script>
+    <script src="assets/js/subdomain-finder.js?v=1"></script>
+    <script src="assets/js/script.js?v=30"></script>
     <script src="assets/js/pdf-tool.js?v=19"></script>
     <script src="assets/js/pdf-extra-tools.js?v=5"></script>
 </body>

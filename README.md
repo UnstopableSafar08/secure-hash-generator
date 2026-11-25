@@ -1,6 +1,6 @@
 # Secure Tools
 
-A modern, local-first web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, converting, editing, resizing, and compressing PDFs, counting characters, and inspecting SSL/TLS certificates. File-based tools and local certificate inspection run entirely in your browser using the Web Crypto API and client-side JavaScript libraries. Live SSL checks send only the requested hostname and port to a small optional Node.js endpoint, with a free Certificate Transparency fallback.
+A modern, local-first web application for generating hashes, passwords, random strings, and bcrypt hashes, converting text case, Base64, and images, resizing images, converting, editing, resizing, and compressing PDFs, counting characters, inspecting SSL/TLS certificates, and discovering public subdomains. File-based tools and local certificate inspection run entirely in your browser using the Web Crypto API and client-side JavaScript libraries. Live SSL checks send only the requested hostname and port to a small optional Node.js endpoint, with a free Certificate Transparency fallback; subdomain lookups send only the base domain to public Certificate Transparency and passive DNS APIs.
 
 ## Features
 
@@ -47,6 +47,15 @@ A modern, local-first web application for generating hashes, passwords, random s
 - Self-hosted API fallback to the free Cert Spotter Certificate Transparency API when the backend is unavailable
 - Every online result states which API was used and whether it was a live TLS handshake or CT data
 - The standalone generator + checker remains available at `ssl-generator/certs_generations.html`
+
+### 🌐 Subdomain Finder
+- Enter a base domain to discover public subdomains — protocols and paths are ignored
+- Combines the free Cert Spotter Certificate Transparency API with HackerTarget passive DNS
+- Deduplicates and sorts results, excludes the apex domain, wildcard-only names, malformed names, and IPs
+- Per-source status cards show result counts, pages read, and any rate-limit or partial-result warnings
+- Filter the list live, copy the visible names, or download them as a `.txt` file
+- Uses only public data — no brute forcing or direct DNS probing, and only the base domain is sent to the APIs
+- Free Cert Spotter queries are capped at 3 pages per search to respect its rate limit; results may be partial
 
 ### ↔️ Base64 Tool
 - Realtime Base64 encode/decode (UTF-8 safe, incl. emoji)
@@ -175,6 +184,7 @@ A modern, local-first web application for generating hashes, passwords, random s
 - File-based tools and local certificate inspection run locally in your browser
 - Uploaded and pasted certificates are parsed locally and are never sent to a server
 - Live SSL checks send only the requested hostname and port to the self-hosted TLS API or the free Cert Spotter CT API
+- Subdomain searches send only the base domain to the free Cert Spotter CT and HackerTarget APIs; no brute forcing or direct DNS probing is performed
 - Uses Web Crypto API (`crypto.subtle` and `crypto.getRandomValues`)
 - SHA-256, SHA-384, and SHA-512 are recommended for security purposes
 - SHA-1 and MD5 are included for compatibility but are considered cryptographically broken
@@ -194,7 +204,8 @@ A modern, local-first web application for generating hashes, passwords, random s
 - **bcryptjs** - Bcrypt hashing library (loaded via CDN)
 - **PKI.js** - X.509 parsing, SAN/key-usage extraction, and signature verification, vendored at `assets/vendor/pkijs.browser.js`
 - **Node.js 20+** - Optional live TLS API in `ssl-generator/server.js` (no npm dependencies)
-- **Cert Spotter CT API** - Free Certificate Transparency fallback for live checks when the backend is unavailable
+- **Cert Spotter CT API** - Free Certificate Transparency fallback for live checks and subdomain discovery when the backend is unavailable
+- **HackerTarget host search API** - Free passive DNS source for the Subdomain Finder
 
 ## Getting Started
 
@@ -226,10 +237,11 @@ secure-hash-generator/
 ├── assets/
 │   ├── css/
 │   │   ├── styles.css          # Core app styling
-│   │   └── ssl-checker.css     # SSL Checker styling (scoped to #sslTab)
+│   │   └── ssl-checker.css     # SSL Checker + Subdomain Finder styling (scoped to their tabs)
 │   ├── js/
 │   │   ├── script.js           # Core tool logic + hash router
 │   │   ├── ssl-checker.js      # Local inspection + live/CT checks
+│   │   ├── subdomain-finder.js # Public subdomain discovery (CT + passive DNS)
 │   │   ├── pdf-tool.js         # PDF to images + images to PDF logic
 │   │   ├── pdf-extra-tools.js  # PDF to Word, split, merge, watermark, protect, compress, resize
 │   │   └── lucide.min.js       # Lucide icons, vendored (no CDN)
@@ -252,7 +264,7 @@ secure-hash-generator/
 ## Navigation
 
 The sidebar lists all tools. Every tool is deep-linkable via hash routes
-(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/ssl`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`, `#/pdfToImages`, `#/pdfToWord`, `#/imagesToPdf`, `#/splitPdf`, `#/mergePdf`, `#/watermarkPdf`, `#/protectPdf`, `#/compressPdf`, `#/resizePdf`),
+(`#/hash`, `#/password`, `#/random`, `#/bcrypt`, `#/ssl`, `#/subdomains`, `#/base64`, `#/charCount`, `#/case`, `#/image`, `#/resize`, `#/pdfToImages`, `#/pdfToWord`, `#/imagesToPdf`, `#/splitPdf`, `#/mergePdf`, `#/watermarkPdf`, `#/protectPdf`, `#/compressPdf`, `#/resizePdf`),
 so bookmarks and back/forward buttons work. The sidebar search filters the
 tool list, and the layout collapses to a top nav on small screens.
 

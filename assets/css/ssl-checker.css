@@ -1,11 +1,13 @@
 /* --------------------------------------------------------------------------
- * SSL Checker (Secure Tools integration)
+ * SSL Checker + Subdomain Finder (Secure Tools integration)
  *
- * The checker markup lives in #sslTab. Theme variables are remapped here so
- * the light-themed checker components match the dark Secure Tools shell.
+ * The checker markup lives in #sslTab and the subdomain finder in
+ * #subdomainsTab. Theme variables are remapped here so the light-themed
+ * checker components match the dark Secure Tools shell.
  * ----------------------------------------------------------------------- */
 
-#sslTab {
+#sslTab,
+#subdomainsTab {
     --bg: rgba(2, 6, 23, 0.65);
     --surface: rgba(15, 23, 42, 0.6);
     --surface-gradient: linear-gradient(145deg, rgba(30, 41, 59, 0.78) 0%, rgba(15, 23, 42, 0.6) 100%);
@@ -18,7 +20,8 @@
     --accent-gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
 }
 
-#sslTab .btn {
+#sslTab .btn,
+#subdomainsTab .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -33,57 +36,68 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-#sslTab .btn-primary {
+#sslTab .btn-primary,
+#subdomainsTab .btn-primary {
     background: var(--accent-gradient);
     color: #fff;
     box-shadow: 0 10px 25px -10px rgba(99, 102, 241, 0.7);
 }
 
-#sslTab .btn-primary:hover {
+#sslTab .btn-primary:hover,
+#subdomainsTab .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 14px 30px -10px rgba(99, 102, 241, 0.85);
 }
 
-#sslTab .btn-primary:active {
+#sslTab .btn-primary:active,
+#subdomainsTab .btn-primary:active {
     transform: translateY(0);
 }
 
-#sslTab .btn-secondary {
+#sslTab .btn-secondary,
+#subdomainsTab .btn-secondary {
     background: rgba(15, 23, 42, 0.6);
     color: var(--text);
     border: 2px solid var(--border);
 }
 
-#sslTab .btn-secondary:hover {
+#sslTab .btn-secondary:hover,
+#subdomainsTab .btn-secondary:hover {
     background: rgba(30, 41, 59, 0.8);
     border-color: var(--primary);
     color: var(--primary);
 }
 
-#sslTab .output-actions {
+#sslTab .output-actions,
+#subdomainsTab .output-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
 }
 
-#sslTab .output-actions .btn {
+#sslTab .output-actions .btn,
+#subdomainsTab .output-actions .btn {
     flex: 1;
     min-width: 140px;
 }
 
-#sslTab .checker-intro {
+#sslTab .checker-intro,
+#subdomainsTab .checker-intro {
     margin-bottom: 1.25rem;
 }
 
-#sslTab .checker-note {
+#sslTab .checker-note,
+#subdomainsTab .checker-note {
     font-size: 0.78rem;
 }
 
-#sslTab .checker-card {
+#sslTab .checker-card,
+#subdomainsTab .checker-card {
     border-radius: 0.9rem;
 }
 
-#sslTab .ssl-results {
+#sslTab .ssl-results,
+#subdomainsTab .ssl-results {
     border-radius: 0.9rem;
 }
 
@@ -92,7 +106,8 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-#sslTab .info {
+#sslTab .info,
+#subdomainsTab .info {
     margin-top: 22px;
 }
 
@@ -535,6 +550,211 @@
     margin-bottom: 0;
 }
 
+/* --------------------------------------------------------------------------
+ * Subdomain Finder
+ * ----------------------------------------------------------------------- */
+
+.subdomain-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.75rem;
+}
+
+.subdomain-form .checker-field {
+    margin-bottom: 0;
+}
+
+.subdomain-form .btn-primary {
+    align-self: end;
+    margin-bottom: 0;
+}
+
+.subdomain-results {
+    background: var(--surface-gradient);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.subdomain-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.subdomain-summary h3 {
+    margin-bottom: 0.25rem;
+    word-break: break-word;
+}
+
+.subdomain-summary-text {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin: 0;
+    word-break: break-word;
+}
+
+.subdomain-sources {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.subdomain-source {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--primary);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+}
+
+.subdomain-source.is-error {
+    border-left-color: var(--danger);
+}
+
+.subdomain-source.is-partial {
+    border-left-color: var(--warning);
+}
+
+.subdomain-source-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.subdomain-source-head strong {
+    color: var(--text);
+    font-size: 0.85rem;
+    word-break: break-word;
+}
+
+.subdomain-source-head span {
+    color: var(--text-light);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.subdomain-source-status {
+    color: var(--text-light);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.subdomain-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.subdomain-toolbar input[type="search"] {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.6rem 0.75rem;
+    border: 2px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.subdomain-toolbar input[type="search"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.subdomain-toolbar .output-actions {
+    margin-left: auto;
+}
+
+#subdomainsTab .subdomain-toolbar .output-actions .btn {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0.6rem 1rem;
+    font-size: 0.82rem;
+}
+
+.subdomain-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 30rem;
+    overflow-y: auto;
+}
+
+.subdomain-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+}
+
+.subdomain-item[hidden] {
+    display: none;
+}
+
+.subdomain-name {
+    color: var(--text);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    word-break: break-all;
+}
+
+.subdomain-origin {
+    flex-shrink: 0;
+    padding: 0.15rem 0.45rem;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--primary);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.subdomain-origin:empty {
+    display: none;
+}
+
+.subdomain-empty {
+    margin: 0.75rem 0 0;
+    padding: 1rem;
+    border: 1px dashed var(--border);
+    border-radius: 0.5rem;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
 @media (max-width: 768px) {
     .checker-grid,
     .ssl-info {
@@ -571,5 +791,43 @@
     #sslTab .checker-grid,
     #sslTab .ssl-info {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Subdomain Finder responsive layout */
+@media (max-width: 768px) {
+    .subdomain-form {
+        grid-template-columns: 1fr;
+    }
+
+    .subdomain-form .btn-primary {
+        width: 100%;
+    }
+
+    .subdomain-sources {
+        grid-template-columns: 1fr;
+    }
+
+    .subdomain-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .subdomain-toolbar .output-actions {
+        margin-left: 0;
+    }
+
+    #subdomainsTab .subdomain-toolbar .output-actions .btn {
+        flex: 1;
+    }
+
+    .subdomain-results {
+        padding: 1.5rem;
+    }
+
+    .subdomain-item {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.35rem;
     }
 }

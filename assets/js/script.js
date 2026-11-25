@@ -33,6 +33,7 @@ const TOOLS = {
     random: { title: 'Random Strings', desc: 'Generate batches of random strings for API keys, tokens and IDs.' },
     bcrypt: { title: 'Bcrypt', desc: 'Hash passwords with bcrypt and verify hashes against plain text.' },
     ssl: { title: 'SSL Checker', desc: 'Inspect certificates locally or check a live domain, port and TLS chain.' },
+    subdomains: { title: 'Subdomain Finder', desc: 'Discover public subdomains from Certificate Transparency logs and passive DNS.' },
     base64: { title: 'Base64 Tool', desc: 'Encode and decode Base64 in realtime, including URL-safe output.' },
     charCount: { title: 'Char Count', desc: 'Count characters, words, lines and inspect character frequency.' },
     case: { title: 'Convert Case', desc: 'Convert text between upper, lower, title, sentence and code cases.' },
