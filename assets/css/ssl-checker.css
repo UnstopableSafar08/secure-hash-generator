@@ -142,6 +142,7 @@
 
 .checker-card h3 {
     margin-bottom: 1rem;
+    color: #1acb6d;
 }
 
 .checker-card form {
@@ -409,6 +410,7 @@
 .ssl-results h4 {
     margin-top: 1.75rem;
     margin-bottom: 0.75rem;
+    color: #1acb6d;
 }
 
 .ssl-info {
