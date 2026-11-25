@@ -125,13 +125,14 @@ function renderRoute() {
     if (toolDesc) toolDesc.textContent = TOOLS[id].desc;
     document.title = TOOLS[id].title + ' · Secure Tools';
 
-    // Keep the active category open and close the rest, so only one
-    // category ever shows its tools. Run this on the first render as well,
-    // otherwise a deep link such as #/ssl selects the tool but leaves its
-    // sidebar item hidden inside a collapsed category.
-    const activeGroup = [...navGroups].find(group => group.classList.contains('has-active'));
-    if (activeGroup) {
-        navGroups.forEach(group => setGroupExpanded(group, group === activeGroup));
+    // Keep every category that contains the active tool open and close the
+    // rest. Most tools live in one category, but shared tools (such as
+    // Images to PDF) appear in more than one. Run this on the first render
+    // as well, otherwise a deep link such as #/ssl selects the tool but
+    // leaves its sidebar item hidden inside a collapsed category.
+    const activeGroups = [...navGroups].filter(group => group.classList.contains('has-active'));
+    if (activeGroups.length) {
+        navGroups.forEach(group => setGroupExpanded(group, activeGroups.includes(group)));
     }
 
     if (firstRender) {
