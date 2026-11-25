@@ -1,16 +1,16 @@
 /* Secure Tools offline support: network-first page loads, cache-first assets. */
-const CACHE = 'secure-tools-v27';
+const CACHE = 'secure-tools-v28';
 const CORE = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './assets/css/styles.css?v=22',
+  './assets/css/styles.css?v=23',
   './assets/css/ssl-checker.css?v=1',
   './assets/js/image-preview.js?v=1',
   './assets/js/script.js?v=29',
   './assets/js/ssl-checker.js?v=1',
   './assets/js/pdf-tool.js?v=19',
-  './assets/js/pdf-extra-tools.js?v=4',
+  './assets/js/pdf-extra-tools.js?v=5',
   './assets/js/lucide.min.js?v=1.58.0',
   './assets/vendor/pkijs.browser.js?v=3.0.5',
   './assets/vendor/pdfjs/pdf.min.js',

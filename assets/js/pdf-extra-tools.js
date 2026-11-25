@@ -352,14 +352,17 @@
     async function openPdfJsDocument(doc, options) {
         const maxPages = (options && options.maxPages) || MAX_WORD_PAGES;
         const toolLabel = (options && options.label) || 'PDF to Word';
+        const password = options && typeof options.password === 'string' ? options.password : '';
         const pdfjs = await loadPdfJs();
         const buffer = await doc.file.arrayBuffer();
-        const task = pdfjs.getDocument({
+        const params = {
             data: new Uint8Array(buffer),
             cMapUrl: assetUrl(PDFJS_BASE + 'cmaps/'),
             cMapPacked: true,
             standardFontDataUrl: assetUrl(PDFJS_BASE + 'standard_fonts/')
-        });
+        };
+        if (password) params.password = password;
+        const task = pdfjs.getDocument(params);
         doc.task = task;
         let cancelled = false;
 
@@ -1756,9 +1759,251 @@
         const rangeInput = byId('watermarkPdfRange');
         const applyBtn = byId('watermarkPdfApplyBtn');
         const hint = byId('watermarkPdfHint');
+        const opacityValue = byId('watermarkPdfOpacityValue');
+        const previewPanel = byId('watermarkPdfPreview');
+        const previewCanvas = byId('watermarkPdfPreviewCanvas');
+        const previewLabel = byId('watermarkPdfPreviewPageLabel');
+        const previewHint = byId('watermarkPdfPreviewHint');
+        const previewLoading = byId('watermarkPdfPreviewLoading');
         if (!applyBtn || !textInput) return;
 
-        const tool = createSingleDocTool({
+        let tool = null;
+        const preview = {
+            doc: null,
+            pageIndex: -1,
+            base: null,
+            pageWidth: 0,
+            pageHeight: 0,
+            scale: 1,
+            loading: false,
+            token: 0,
+            rangeTimer: null
+        };
+
+        function syncOpacityLabel() {
+            if (opacityValue && opacityInput) opacityValue.textContent = opacityInput.value + '%';
+        }
+
+        function resetPreview() {
+            preview.token++;
+            preview.doc = null;
+            preview.pageIndex = -1;
+            preview.base = null;
+            preview.loading = false;
+            preview.pageWidth = 0;
+            preview.pageHeight = 0;
+            clearTimeout(preview.rangeTimer);
+            if (previewPanel) previewPanel.hidden = true;
+            if (previewLoading) previewLoading.hidden = true;
+            if (previewCanvas) {
+                const ctx = previewCanvas.getContext('2d');
+                if (ctx) ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            }
+        }
+
+        function currentPreviewPage(doc) {
+            let pages;
+            try {
+                pages = parsePageSelection(rangeInput.value, doc.pageCount);
+            } catch (error) {
+                pages = [0];
+            }
+            return pages.length ? pages[0] : 0;
+        }
+
+        function drawPreviewWatermark() {
+            if (!previewCanvas || !preview.base || !preview.doc) return;
+            const ctx = previewCanvas.getContext('2d');
+            if (!ctx) return;
+
+            const base = preview.base;
+            if (previewCanvas.width !== base.width) previewCanvas.width = base.width;
+            if (previewCanvas.height !== base.height) previewCanvas.height = base.height;
+            ctx.clearRect(0, 0, base.width, base.height);
+            ctx.drawImage(base, 0, 0);
+
+            if (previewLabel) previewLabel.textContent = 'Page ' + (preview.pageIndex + 1);
+
+            const text = textInput.value.trim();
+            const size = Number(sizeInput.value);
+            const opacity = Number(opacityInput.value);
+            const rotation = Number(rotationSelect.value);
+            const color = /^#[0-9a-f]{6}$/i.test(colorInput.value) ? colorInput.value : '#ef4444';
+
+            if (!text) {
+                if (previewHint) previewHint.textContent = 'Type watermark text to see it on the page.';
+                return;
+            }
+            if (!Number.isFinite(size) || size < 8 || size > 240 ||
+                !Number.isFinite(opacity) || opacity < 5 || opacity > 100 ||
+                ![-45, 0, 45, 90].includes(rotation)) {
+                if (previewHint) previewHint.textContent = 'Enter a valid font size, opacity and rotation to see the watermark.';
+                return;
+            }
+
+            const pageWidth = Math.max(preview.pageWidth, 1);
+            const pageHeight = Math.max(preview.pageHeight, 1);
+            const maxWidth = rotation === 0
+                ? pageWidth * 0.92
+                : rotation === 90
+                    ? pageHeight * 0.92
+                    : Math.hypot(pageWidth, pageHeight) * 0.72;
+
+            // Mirror the export path's automatic shrink-to-fit calculation so
+            // long text does not overflow the preview.
+            ctx.save();
+            ctx.font = '700 ' + size + 'px Helvetica, Arial, sans-serif';
+            const baseWidth = Math.max(1, ctx.measureText(text).width);
+            ctx.restore();
+            const drawSize = Math.max(8, Math.min(size, size * maxWidth / baseWidth));
+
+            ctx.save();
+            ctx.globalAlpha = opacity / 100;
+            ctx.fillStyle = color;
+            ctx.font = '700 ' + (drawSize * preview.scale) + 'px Helvetica, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.translate(base.width / 2, base.height / 2);
+            ctx.rotate(-rotation * Math.PI / 180);
+            ctx.fillText(text, 0, 0);
+            ctx.restore();
+
+            if (previewHint) {
+                let count = null;
+                try {
+                    count = parsePageSelection(rangeInput.value, preview.doc.pageCount).length;
+                } catch (error) {
+                    count = null;
+                }
+                if (count === null) {
+                    previewHint.textContent = 'Previewing page ' + (preview.pageIndex + 1) + '. Fix the page range to watermark it.';
+                } else {
+                    previewHint.textContent = 'Previewing page ' + (preview.pageIndex + 1) + ' · ' +
+                        count + (count === 1 ? ' page' : ' pages') + ' will be watermarked.';
+                }
+            }
+        }
+
+        function buildBlankPreview(doc, pageIndex) {
+            let width = 612;
+            let height = 792;
+            try {
+                const page = doc.pdfDoc && doc.pdfDoc.getPage(pageIndex);
+                if (page) {
+                    const size = page.getSize();
+                    const rotation = ((page.getRotation().angle % 360) + 360) % 360;
+                    const sideways = rotation === 90 || rotation === 270;
+                    width = sideways ? size.height : size.width;
+                    height = sideways ? size.width : size.height;
+                }
+            } catch (error) {
+                // Fall back to US Letter dimensions.
+            }
+
+            const scale = Math.min(1.5, 900 / Math.max(width, 1));
+            const base = document.createElement('canvas');
+            base.width = Math.max(1, Math.round(width * scale));
+            base.height = Math.max(1, Math.round(height * scale));
+            const ctx = base.getContext('2d', { alpha: false });
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, base.width, base.height);
+
+            preview.base = base;
+            preview.pageWidth = width;
+            preview.pageHeight = height;
+            preview.scale = base.width / width;
+            drawPreviewWatermark();
+            if (previewHint) {
+                previewHint.textContent = 'Page content could not be rendered; showing the watermark on a blank page.';
+            }
+        }
+
+        async function loadPreviewPage(doc, pageIndex) {
+            if (!previewPanel || !previewCanvas) return;
+            const token = ++preview.token;
+            preview.doc = doc;
+            preview.pageIndex = pageIndex;
+            preview.base = null;
+            preview.loading = true;
+            previewPanel.hidden = false;
+            if (previewLoading) previewLoading.hidden = false;
+            if (previewHint) previewHint.textContent = 'Rendering page ' + (pageIndex + 1) + '…';
+
+            try {
+                if (!doc.pdfjsDoc) {
+                    await openPdfJsDocument(doc, {
+                        maxPages: Number.MAX_SAFE_INTEGER,
+                        label: 'Watermark preview',
+                        password: doc.password || ''
+                    });
+                }
+                if (token !== preview.token || !tool || tool.ui.doc !== doc) return;
+
+                const page = await doc.pdfjsDoc.getPage(pageIndex + 1);
+                if (token !== preview.token || !tool || tool.ui.doc !== doc) return;
+
+                const pageView = page.getViewport({ scale: 1 });
+                const renderScale = Math.min(2, 900 / Math.max(pageView.width, 1));
+                const viewport = page.getViewport({ scale: renderScale });
+                const base = document.createElement('canvas');
+                base.width = Math.max(1, Math.round(viewport.width));
+                base.height = Math.max(1, Math.round(viewport.height));
+                const ctx = base.getContext('2d', { alpha: false });
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, base.width, base.height);
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                page.cleanup();
+                if (token !== preview.token || !tool || tool.ui.doc !== doc) return;
+
+                preview.base = base;
+                preview.pageWidth = pageView.width;
+                preview.pageHeight = pageView.height;
+                preview.scale = base.width / pageView.width;
+                drawPreviewWatermark();
+            } catch (error) {
+                if (token === preview.token && tool && tool.ui.doc === doc) {
+                    buildBlankPreview(doc, pageIndex);
+                }
+            } finally {
+                if (token === preview.token) {
+                    preview.loading = false;
+                    if (previewLoading) previewLoading.hidden = true;
+                }
+            }
+        }
+
+        function syncPreview() {
+            if (!tool || !previewPanel || !previewCanvas) return;
+            const doc = tool.ui.doc;
+            if (!doc || doc.status !== 'ready') {
+                resetPreview();
+                return;
+            }
+
+            previewPanel.hidden = false;
+            const pageIndex = currentPreviewPage(doc);
+
+            if (preview.doc !== doc) {
+                loadPreviewPage(doc, pageIndex);
+                return;
+            }
+            if (preview.pageIndex !== pageIndex) {
+                clearTimeout(preview.rangeTimer);
+                preview.rangeTimer = setTimeout(function () {
+                    if (!tool) return;
+                    const current = tool.ui.doc;
+                    if (!current || current.status !== 'ready') return;
+                    const nextPage = currentPreviewPage(current);
+                    if (preview.doc !== current || preview.pageIndex !== nextPage) {
+                        loadPreviewPage(current, nextPage);
+                    }
+                }, 220);
+                return;
+            }
+            if (preview.base) drawPreviewWatermark();
+        }
+
+        tool = createSingleDocTool({
             prefix: 'watermarkPdf',
             emptySub: 'Add a PDF to stamp a text watermark.',
             load: function (doc) {
@@ -1783,20 +2028,36 @@
                 } else {
                     hint.textContent = 'All ' + ui.doc.pageCount + (ui.doc.pageCount === 1 ? ' page' : ' pages') + ' will be watermarked.';
                 }
+                syncPreview();
             },
             onNewDoc: function () {
                 rangeInput.value = '';
                 rangeInput.classList.remove('invalid');
+                resetPreview();
             },
             onClear: function () {
                 rangeInput.classList.remove('invalid');
+                resetPreview();
             }
         });
+
+        syncOpacityLabel();
 
         rangeInput.addEventListener('input', function () {
             rangeInput.classList.remove('invalid');
             tool.setError('');
             tool.updateAction();
+        });
+
+        opacityInput.addEventListener('input', function () {
+            syncOpacityLabel();
+            drawPreviewWatermark();
+        });
+
+        [textInput, sizeInput, rotationSelect, colorInput].forEach(function (input) {
+            if (!input) return;
+            input.addEventListener('input', drawPreviewWatermark);
+            input.addEventListener('change', drawPreviewWatermark);
         });
 
         applyBtn.addEventListener('click', async function () {

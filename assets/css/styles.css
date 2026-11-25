@@ -2690,6 +2690,7 @@ select.resize-field optgroup {
 
 .pdf-doc-list[hidden],
 .pdf-results[hidden],
+.pdf-preview[hidden],
 .pdf-output[hidden],
 .pdf-download-all-btn[hidden] {
     display: none;
@@ -3112,6 +3113,114 @@ select.resize-field optgroup {
     font-weight: 700;
 }
 
+.pdf-preview {
+    margin-top: 16px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.35);
+}
+
+.pdf-preview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.pdf-preview-head h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.pdf-preview-head .lucide {
+    width: 16px;
+    height: 16px;
+    color: var(--primary);
+}
+
+.pdf-preview-page {
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.62rem;
+    font-weight: 500;
+}
+
+.pdf-preview-badge {
+    padding: 2px 8px;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.pdf-preview-stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 220px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(2, 6, 23, 0.45);
+}
+
+.pdf-preview-stage canvas {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 520px;
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.pdf-preview-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.72);
+    color: var(--text-primary);
+    font-size: 0.7rem;
+}
+
+.pdf-preview-loading[hidden] {
+    display: none;
+}
+
+.pdf-preview-loading .lucide {
+    width: 16px;
+    height: 16px;
+    animation: pdfPreviewSpin 1s linear infinite;
+}
+
+@keyframes pdfPreviewSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.pdf-preview-hint {
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+    font-size: 0.64rem;
+    line-height: 1.45;
+}
+
 .pdf-output {
     display: flex;
     align-items: center;
@@ -3199,6 +3308,43 @@ select.resize-field optgroup {
 
 .pdf-inline-fields .resize-export-field {
     min-width: 0;
+}
+
+.pdf-field-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.pdf-field-head label {
+    margin: 0;
+}
+
+.pdf-field-value {
+    padding: 2px 8px;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 6px;
+    background: rgba(99, 102, 241, 0.12);
+    color: #c7d2fe;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.pdf-opacity-slider {
+    width: 100%;
+    height: 20px;
+    margin: 2px 0 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.pdf-opacity-slider:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 4px;
 }
 
 .pdf-color-field {

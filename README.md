@@ -134,7 +134,8 @@ A modern, local-first web application for generating hashes, passwords, random s
 
 ### 🏷️ Watermark PDF
 - Stamp visible text across all pages or a chosen page range
-- Controls for text, font size (8–240), opacity (5–100%), rotation (0°, 45°, 90°, or -45°), and color
+- Live preview of the first watermarked page updates as you change the text, size, opacity, rotation, and color
+- Controls for text, font size (8–240), an opacity slider (5–100%), rotation (0°, 45°, 90°, or -45°), and color
 - Automatically scales long watermark text to fit the page
 - Password-protected inputs prompt for their password locally
 - Watermarks are visual overlays, not digital rights management
